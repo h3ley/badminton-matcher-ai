@@ -323,58 +323,33 @@
         }
 
         /**
-         * Creates matches from a pool of players with a hybrid strategy.
+         * Creates balanced matches from a pool of players.
          */
-        function createMatches(playerPool, numCourts) {
-            const courts = [];
-            let remainingPool = [...playerPool];
-
-            // 1. Chance to create same-level courts
-            const playersByLevel = {
-                'A': remainingPool.filter(p => p.level === 'A'),
-                'B': remainingPool.filter(p => p.level === 'B'),
-                'C': remainingPool.filter(p => p.level === 'C')
-            };
-
-            const levelPriority = ['A', 'B', 'C'];
-            for (const level of levelPriority) {
-                // 25% chance to create a same-level court if possible
-                if (playersByLevel[level].length >= 4 && courts.length < numCourts && Math.random() < 0.25) {
-                    const courtPlayers = playersByLevel[level].splice(0, 4);
-                    shuffleArray(courtPlayers);
-                    courts.push({
-                        team1: [courtPlayers[0], courtPlayers[1]],
-                        team2: [courtPlayers[2], courtPlayers[3]]
-                    });
-                    // Remove these players from the main pool
-                    remainingPool = remainingPool.filter(p => !courtPlayers.some(cp => cp.id === p.id));
-                }
+        function createBalancedMatches(playerPool) {
+            let courts = [];
+            let pool = [...playerPool];
+            
+            // 1. Create balanced teams by pairing strongest with weakest
+            pool.sort((a, b) => skillScores[b.level] - skillScores[a.level]);
+            const teams = [];
+            while(pool.length >= 2) {
+                const player1 = pool.shift();
+                const player2 = pool.pop();
+                teams.push({
+                    players: [player1, player2],
+                    score: skillScores[player1.level] + (player2 ? skillScores[player2.level] : 0)
+                });
             }
 
-            // 2. Handle leftover players with balanced mixing
-            if (remainingPool.length >= 4 && courts.length < numCourts) {
-                remainingPool.sort((a, b) => skillScores[b.level] - skillScores[a.level]);
-                
-                const teams = [];
-                while(remainingPool.length >= 2) {
-                    const player1 = remainingPool.shift();
-                    const player2 = remainingPool.pop();
-                    teams.push({
-                        players: [player1, player2],
-                        score: skillScores[player1.level] + (player2 ? skillScores[player2.level] : 0)
-                    });
-                }
-
-                teams.sort((a, b) => b.score - a.score);
-
-                while(teams.length >= 2 && courts.length < numCourts) {
-                    const team1 = teams.shift();
-                    const team2 = teams.pop();
-                    courts.push({
-                        team1: team1.players,
-                        team2: team2 ? team2.players : [null, null]
-                    });
-                }
+            // 2. Create balanced matches by pairing teams with the closest scores
+            teams.sort((a, b) => b.score - a.score);
+            while(teams.length >= 2) {
+                const team1 = teams.shift();
+                const team2 = teams.shift(); // Take the next strongest team
+                courts.push({
+                    team1: team1.players,
+                    team2: team2.players
+                });
             }
             
             shuffleArray(courts);
@@ -410,7 +385,7 @@
             const restingNow = availablePlayers.slice(playersPerRound);
             const playingNowIds = new Set(playingPool.map(p => p.id));
 
-            const courts = createMatches(playingPool, numCourts);
+            const courts = createBalancedMatches(playingPool);
 
             players.forEach(p => {
                 if (playingNowIds.has(p.id)) {
@@ -455,7 +430,7 @@
             const restingNow = availablePlayers.slice(playersPerRound);
             const playingNowIds = new Set(playingPool.map(p => p.id));
 
-            const courts = createMatches(playingPool, numCourts);
+            const courts = createBalancedMatches(playingPool);
 
             players.forEach(p => {
                 if (playingNowIds.has(p.id)) {
@@ -473,35 +448,53 @@
         function reshuffleSingleCourt(courtIndex) {
             if (!currentMatch || !currentMatch.courts[courtIndex]) return;
 
-            // 1. Create a pool of players from the target court and the resting list
+            // 1. Identify players in the target court and resting players
             const court = currentMatch.courts[courtIndex];
             const playersInCourt = [...court.team1, ...court.team2].filter(Boolean);
-            const reshufflePool = [...playersInCourt, ...currentMatch.resting];
+            const restingPlayers = currentMatch.resting;
+            
+            // Create a pool of players available for this specific reshuffle
+            const reshufflePool = [...playersInCourt, ...restingPlayers];
 
-            // Safeguard: must have at least 4 players to form a court
             if (reshufflePool.length < 4) {
-                console.warn("Not enough players in the court + resting pool to reshuffle.");
+                console.warn("Not enough players to reshuffle.");
                 return; 
             }
 
-            // 2. Shuffle this combined pool
-            shuffleArray(reshufflePool);
-
-            // 3. Select the new 4 players for the court
-            const newCourtPlayers = reshufflePool.slice(0, 4);
+            // 2. Update gamesPlayed counts BEFORE reshuffling
+            const originalPlayerIds = new Set(playersInCourt.map(p => p.id));
             
-            // 4. The rest go back to the resting list
+            shuffleArray(reshufflePool);
+            const newCourtPlayers = reshufflePool.slice(0, 4);
+            const newPlayerIds = new Set(newCourtPlayers.map(p => p.id));
+
+            // Decrement for players who left the court
+            originalPlayerIds.forEach(id => {
+                if (!newPlayerIds.has(id)) {
+                    const player = players.find(p => p.id === id);
+                    if (player) player.gamesPlayed--;
+                }
+            });
+            // Increment for players who entered the court
+            newPlayerIds.forEach(id => {
+                if (!originalPlayerIds.has(id)) {
+                    const player = players.find(p => p.id === id);
+                    if (player) player.gamesPlayed++;
+                }
+            });
+            
+            // 3. The rest go back to the resting list
             const newRestingPlayers = reshufflePool.slice(4);
 
-            // 5. Update the court with new, randomly assigned teams
+            // 4. Update the court with new, randomly assigned teams
             currentMatch.courts[courtIndex].team1 = [newCourtPlayers[0], newCourtPlayers[1]];
             currentMatch.courts[courtIndex].team2 = [newCourtPlayers[2], newCourtPlayers[3]];
 
-            // 6. Update the global resting list
+            // 5. Update the global resting list
             currentMatch.resting = newRestingPlayers;
 
-            // 7. Re-render and save
-            renderMatches();
+            // 6. Re-render everything to reflect changes and save
+            renderAll();
             saveState();
         }
 
