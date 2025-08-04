@@ -97,11 +97,16 @@
 
         <!-- Results Section -->
         <section id="results-section" class="hidden">
-            <h2 id="round-counter" class="text-xl font-bold text-center mb-4 text-slate-700"></h2>
-            <div id="courts-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-center">
-                <!-- Court cards will be generated here -->
+            <div class="flex justify-center items-center gap-3 mb-4">
+                <h2 id="round-counter" class="text-xl font-bold text-slate-700"></h2>
+                <button id="reshuffle-btn" class="bg-sky-500 text-white font-semibold py-1.5 px-4 rounded-full hover:bg-sky-600 transition-colors text-xs">
+                    สุ่มใหม่
+                </button>
             </div>
-            <div id="resting-players-container" class="mt-6 bg-white p-4 rounded-2xl shadow-sm transition-colors duration-300">
+            <div id="current-round-container" class="mb-6">
+                <!-- Current round list will be generated here -->
+            </div>
+            <div id="resting-players-container" class="bg-white p-4 rounded-2xl shadow-sm transition-colors duration-300">
                 <h3 class="text-lg font-semibold text-slate-600 mb-3">😴 ผู้เล่นที่พัก</h3>
                 <div id="resting-list" class="flex flex-wrap gap-2">
                     <!-- Resting player tags will be generated here -->
@@ -156,7 +161,8 @@
         const clearAllBtn = document.getElementById('clear-all-btn');
         const resultsSection = document.getElementById('results-section');
         const roundCounter = document.getElementById('round-counter');
-        const courtsContainer = document.getElementById('courts-container');
+        const reshuffleBtn = document.getElementById('reshuffle-btn');
+        const currentRoundContainer = document.getElementById('current-round-container');
         const restingPlayersContainer = document.getElementById('resting-players-container');
         const restingList = document.getElementById('resting-list');
         const messageArea = document.getElementById('message-area');
@@ -316,6 +322,66 @@
             }
         }
 
+        /**
+         * Creates matches from a pool of players with a hybrid strategy.
+         */
+        function createMatches(playerPool, numCourts) {
+            const courts = [];
+            let remainingPool = [...playerPool];
+
+            // 1. Chance to create same-level courts
+            const playersByLevel = {
+                'A': remainingPool.filter(p => p.level === 'A'),
+                'B': remainingPool.filter(p => p.level === 'B'),
+                'C': remainingPool.filter(p => p.level === 'C')
+            };
+
+            const levelPriority = ['A', 'B', 'C'];
+            for (const level of levelPriority) {
+                // 25% chance to create a same-level court if possible
+                if (playersByLevel[level].length >= 4 && courts.length < numCourts && Math.random() < 0.25) {
+                    const courtPlayers = playersByLevel[level].splice(0, 4);
+                    shuffleArray(courtPlayers);
+                    courts.push({
+                        team1: [courtPlayers[0], courtPlayers[1]],
+                        team2: [courtPlayers[2], courtPlayers[3]]
+                    });
+                    // Remove these players from the main pool
+                    remainingPool = remainingPool.filter(p => !courtPlayers.some(cp => cp.id === p.id));
+                }
+            }
+
+            // 2. Handle leftover players with balanced mixing
+            if (remainingPool.length >= 4 && courts.length < numCourts) {
+                remainingPool.sort((a, b) => skillScores[b.level] - skillScores[a.level]);
+                
+                const teams = [];
+                while(remainingPool.length >= 2) {
+                    const player1 = remainingPool.shift();
+                    const player2 = remainingPool.pop();
+                    teams.push({
+                        players: [player1, player2],
+                        score: skillScores[player1.level] + (player2 ? skillScores[player2.level] : 0)
+                    });
+                }
+
+                teams.sort((a, b) => b.score - a.score);
+
+                while(teams.length >= 2 && courts.length < numCourts) {
+                    const team1 = teams.shift();
+                    const team2 = teams.pop();
+                    courts.push({
+                        team1: team1.players,
+                        team2: team2 ? team2.players : [null, null]
+                    });
+                }
+            }
+            
+            shuffleArray(courts);
+            return courts;
+        }
+
+
         function generateNewRound() {
             const numCourts = parseInt(courtCountInput.value, 10);
             const playersPerRound = numCourts * 4;
@@ -337,9 +403,6 @@
                 historySection.style.display = 'block';
             }
 
-            // --- New Balanced Matching Algorithm ---
-
-            // 1. Select players for the round based on gamesPlayed
             let availablePlayers = [...players];
             shuffleArray(availablePlayers);
             availablePlayers.sort((a,b) => a.gamesPlayed - b.gamesPlayed);
@@ -347,34 +410,8 @@
             const restingNow = availablePlayers.slice(playersPerRound);
             const playingNowIds = new Set(playingPool.map(p => p.id));
 
-            // 2. Create balanced teams by pairing strongest with weakest
-            playingPool.sort((a, b) => skillScores[b.level] - skillScores[a.level]); // Sort by skill descending
-            
-            const teams = [];
-            while(playingPool.length > 0) {
-                const player1 = playingPool.shift(); // Strongest remaining
-                const player2 = playingPool.pop();   // Weakest remaining
-                teams.push({
-                    players: [player1, player2],
-                    score: skillScores[player1.level] + skillScores[player2.level]
-                });
-            }
+            const courts = createMatches(playingPool, numCourts);
 
-            // 3. Create balanced matches by pairing strongest team with weakest team
-            teams.sort((a, b) => b.score - a.score); // Sort teams by score descending
-
-            const courts = [];
-            while(teams.length > 0) {
-                const team1 = teams.shift(); // Strongest team
-                const team2 = teams.pop();   // Weakest team
-                courts.push({
-                    team1: team1.players,
-                    team2: team2.players
-                });
-            }
-            shuffleArray(courts); // Shuffle court order
-
-            // 4. Update games played and set current match
             players.forEach(p => {
                 if (playingNowIds.has(p.id)) {
                     p.gamesPlayed++;
@@ -389,6 +426,85 @@
             saveState();
         }
 
+        function reshuffleCurrentRound() {
+            if (round === 0) return;
+
+            // Revert gamesPlayed count for players in the current match
+            const playersInCurrentMatch = currentMatch.courts.flatMap(c => [...c.team1, ...c.team2]);
+            playersInCurrentMatch.forEach(playerInMatch => {
+                if(playerInMatch) {
+                    const originalPlayer = players.find(p => p.id === playerInMatch.id);
+                    if (originalPlayer) {
+                        originalPlayer.gamesPlayed--;
+                    }
+                }
+            });
+
+            // Now, generate a new match arrangement for the same round number
+            const numCourts = parseInt(courtCountInput.value, 10);
+            const playersPerRound = numCourts * 4;
+
+            if (players.length < playersPerRound) {
+                return;
+            }
+
+            let availablePlayers = [...players];
+            shuffleArray(availablePlayers);
+            availablePlayers.sort((a,b) => a.gamesPlayed - b.gamesPlayed);
+            let playingPool = availablePlayers.slice(0, playersPerRound);
+            const restingNow = availablePlayers.slice(playersPerRound);
+            const playingNowIds = new Set(playingPool.map(p => p.id));
+
+            const courts = createMatches(playingPool, numCourts);
+
+            players.forEach(p => {
+                if (playingNowIds.has(p.id)) {
+                    p.gamesPlayed++;
+                }
+            });
+
+            currentMatch.courts = courts.map((c, i) => ({ ...c, courtNum: i + 1 }));
+            currentMatch.resting = restingNow;
+            
+            renderAll();
+            saveState();
+        }
+
+        function reshuffleSingleCourt(courtIndex) {
+            if (!currentMatch || !currentMatch.courts[courtIndex]) return;
+
+            // 1. Create a pool of players from the target court and the resting list
+            const court = currentMatch.courts[courtIndex];
+            const playersInCourt = [...court.team1, ...court.team2].filter(Boolean);
+            const reshufflePool = [...playersInCourt, ...currentMatch.resting];
+
+            // Safeguard: must have at least 4 players to form a court
+            if (reshufflePool.length < 4) {
+                console.warn("Not enough players in the court + resting pool to reshuffle.");
+                return; 
+            }
+
+            // 2. Shuffle this combined pool
+            shuffleArray(reshufflePool);
+
+            // 3. Select the new 4 players for the court
+            const newCourtPlayers = reshufflePool.slice(0, 4);
+            
+            // 4. The rest go back to the resting list
+            const newRestingPlayers = reshufflePool.slice(4);
+
+            // 5. Update the court with new, randomly assigned teams
+            currentMatch.courts[courtIndex].team1 = [newCourtPlayers[0], newCourtPlayers[1]];
+            currentMatch.courts[courtIndex].team2 = [newCourtPlayers[2], newCourtPlayers[3]];
+
+            // 6. Update the global resting list
+            currentMatch.resting = newRestingPlayers;
+
+            // 7. Re-render and save
+            renderMatches();
+            saveState();
+        }
+
         function renderAll() {
             renderPlayerList();
             renderMatches();
@@ -397,7 +513,7 @@
 
         function renderMatches() {
             roundCounter.textContent = `รอบปัจจุบัน (รอบที่ ${round})`;
-            courtsContainer.innerHTML = '';
+            currentRoundContainer.innerHTML = '';
             restingList.innerHTML = '';
             
             if (round === 0) {
@@ -408,25 +524,32 @@
             restingPlayersContainer.className = 'mt-6 bg-sky-50 p-4 rounded-2xl shadow-sm transition-colors duration-300 border border-sky-200';
             restingPlayersContainer.querySelector('h3').className = 'text-lg font-semibold text-sky-800 mb-3';
 
-            currentMatch.courts.forEach((court) => {
-                const courtCard = document.createElement('div');
-                courtCard.className = 'court-card bg-sky-50 p-4 rounded-2xl shadow-sm fade-in border border-sky-200';
-                courtCard.innerHTML = `
-                    <h3 class="text-lg font-semibold text-sky-700 mb-3 border-b border-sky-200 pb-2">คอร์ดที่ ${court.courtNum}</h3>
-                    <div class="flex items-center justify-around text-center">
-                        <div class="team space-y-1.5">
-                            ${createPlayerHTML(court.team1[0], null, court.courtNum - 1, 0, 0)}
-                            ${createPlayerHTML(court.team1[1], null, court.courtNum - 1, 0, 1)}
-                        </div>
-                        <span class="text-slate-400 font-bold">VS</span>
-                        <div class="team space-y-1.5">
-                            ${createPlayerHTML(court.team2[0], null, court.courtNum - 1, 1, 0)}
-                            ${createPlayerHTML(court.team2[1], null, court.courtNum - 1, 1, 1)}
-                        </div>
+            const currentRoundCard = document.createElement('div');
+            currentRoundCard.className = 'bg-sky-50 p-4 rounded-2xl shadow-sm fade-in border border-sky-200';
+
+            let courtsHTML = currentMatch.courts.map((court, courtIndex) => `
+                <div class="flex items-center justify-around text-center text-sm py-2 ${currentMatch.courts.length > 1 && courtIndex < currentMatch.courts.length - 1 ? 'border-b border-sky-200' : ''}">
+                    <div class="font-semibold text-sky-700 w-20 flex items-center gap-2">
+                        <span>คอร์ด ${court.courtNum}</span>
+                        <button class="reshuffle-court-btn text-sky-500 hover:text-sky-700" data-court-index="${courtIndex}" title="สุ่มคอร์ดนี้ใหม่">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>
+                        </button>
                     </div>
-                `;
-                courtsContainer.appendChild(courtCard);
-            });
+                    <div class="team flex gap-1.5 w-32 justify-center">
+                        ${createPlayerHTML(court.team1[0], null, courtIndex, 0, 0)}
+                        ${createPlayerHTML(court.team1[1], null, courtIndex, 0, 1)}
+                    </div>
+                    <span class="text-slate-400 font-bold text-base">VS</span>
+                    <div class="team flex gap-1.5 w-32 justify-center">
+                        ${createPlayerHTML(court.team2[0], null, courtIndex, 1, 0)}
+                        ${createPlayerHTML(court.team2[1], null, courtIndex, 1, 1)}
+                    </div>
+                </div>
+            `).join('');
+
+            currentRoundCard.innerHTML = courtsHTML;
+            currentRoundContainer.appendChild(currentRoundCard);
+
 
             if (currentMatch.resting.length > 0) {
                 currentMatch.resting.forEach(player => {
@@ -506,7 +629,7 @@
             const isHistory = context.historyIndex !== null;
             const match = isHistory ? history[context.historyIndex] : currentMatch;
             
-            const playersInMatch = match.courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id);
+            const playersInMatch = match.courts.flatMap(c => [...c.team1, ...c.team2]).filter(Boolean).map(p => p.id);
             const availableForSwap = players.filter(p => !playersInMatch.includes(p.id));
 
             if (availableForSwap.length === 0) {
@@ -609,6 +732,7 @@
         // --- Event Listeners ---
         addPlayersBtn.addEventListener('click', handleAddPlayers);
         generateRoundBtn.addEventListener('click', generateNewRound);
+        reshuffleBtn.addEventListener('click', reshuffleCurrentRound);
         
         resetBtn.addEventListener('click', () => {
             openConfirmModal('ยืนยันการรีเซ็ตเกม', 'คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตเกม? จำนวนเกมของผู้เล่นทั้งหมดจะถูกตั้งเป็น 0', resetApp);
@@ -638,11 +762,18 @@
             }
         });
 
-        app.addEventListener('click', (e) => {
+        currentRoundContainer.addEventListener('click', (e) => {
+            const reshuffleCourtBtn = e.target.closest('.reshuffle-court-btn');
+            if (reshuffleCourtBtn) {
+                const courtIndex = parseInt(reshuffleCourtBtn.dataset.courtIndex, 10);
+                reshuffleSingleCourt(courtIndex);
+                return;
+            }
+            
             const slot = e.target.closest('.player-slot');
             if (slot) {
                 const context = {
-                    historyIndex: slot.hasAttribute('data-history-index') ? parseInt(slot.dataset.historyIndex, 10) : null,
+                    historyIndex: null, // Only for current round
                     courtIndex: parseInt(slot.dataset.courtIndex, 10),
                     teamIndex: parseInt(slot.dataset.teamIndex, 10),
                     playerIndex: parseInt(slot.dataset.playerIndex, 10)
@@ -650,6 +781,20 @@
                 openPlayerModal(context);
             }
         });
+
+        historyContainer.addEventListener('click', (e) => {
+             const slot = e.target.closest('.player-slot');
+            if (slot) {
+                const context = {
+                    historyIndex: parseInt(slot.dataset.historyIndex, 10),
+                    courtIndex: parseInt(slot.dataset.courtIndex, 10),
+                    teamIndex: parseInt(slot.dataset.teamIndex, 10),
+                    playerIndex: parseInt(slot.dataset.playerIndex, 10)
+                };
+                openPlayerModal(context);
+            }
+        });
+
 
         // Modal Listeners
         modalCloseBtn.addEventListener('click', closePlayerModal);
