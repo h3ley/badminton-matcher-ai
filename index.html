@@ -130,6 +130,18 @@
             </button>
         </div>
     </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
+            <h3 id="confirm-title" class="text-lg font-bold text-slate-800 mb-2"></h3>
+            <p id="confirm-message" class="text-slate-600 text-sm mb-6"></p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-no-btn" class="w-full bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">ยกเลิก</button>
+                <button id="confirm-yes-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
 
 
     <script>
@@ -148,11 +160,18 @@
         const restingPlayersContainer = document.getElementById('resting-players-container');
         const restingList = document.getElementById('resting-list');
         const messageArea = document.getElementById('message-area');
+        const historySection = document.getElementById('history-section');
+        const historyContainer = document.getElementById('history-container');
+        
+        // Modals
         const playerModal = document.getElementById('player-modal');
         const modalPlayerList = document.getElementById('modal-player-list');
         const modalCloseBtn = document.getElementById('modal-close-btn');
-        const historySection = document.getElementById('history-section');
-        const historyContainer = document.getElementById('history-container');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmTitle = document.getElementById('confirm-title');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
 
         // --- Application State ---
         const STORAGE_KEY = 'badmintonMatcherState';
@@ -161,6 +180,7 @@
         let history = []; // Array of past matches
         let round = 0;
         let editingContext = null; // { historyIndex, courtIndex, teamIndex, playerIndex }
+        let pendingAction = null; // For confirmation modal
 
         // --- Functions ---
 
@@ -252,7 +272,7 @@
                 playerTag.innerHTML = `
                     <span class="font-medium text-sm">${player.name}</span>
                     <span class="text-xs bg-sky-100 text-sky-700 font-semibold w-10 text-center py-0.5 rounded-full">${player.gamesPlayed}</span>
-                    <button data-player-id="${player.id}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-base leading-none w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
+                    <button data-player-id="${player.id}" data-player-name="${player.name}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-base leading-none w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
                 `;
                 playerListContainer.appendChild(playerTag);
             });
@@ -509,18 +529,49 @@
             localStorage.removeItem(STORAGE_KEY);
         }
 
+        /**
+         * Opens a confirmation modal for risky actions.
+         * @param {string} title - The title for the modal.
+         * @param {string} message - The confirmation message.
+         * @param {function} onConfirm - The callback function to execute if confirmed.
+         */
+        function openConfirmModal(title, message, onConfirm) {
+            confirmTitle.textContent = title;
+            confirmMessage.textContent = message;
+            pendingAction = onConfirm;
+            confirmModal.classList.add('is-open');
+        }
+
+        /**
+         * Closes the confirmation modal.
+         */
+        function closeConfirmModal() {
+            confirmModal.classList.remove('is-open');
+            pendingAction = null;
+        }
+
         // --- Event Listeners ---
         addPlayersBtn.addEventListener('click', handleAddPlayers);
         generateRoundBtn.addEventListener('click', generateNewRound);
-        resetBtn.addEventListener('click', resetApp);
-        clearAllBtn.addEventListener('click', clearAll);
+        
+        resetBtn.addEventListener('click', () => {
+            openConfirmModal('ยืนยันการรีเซ็ตเกม', 'คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตเกม? จำนวนเกมของผู้เล่นทั้งหมดจะถูกตั้งเป็น 0', resetApp);
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            openConfirmModal('ยืนยันการล้างข้อมูล', 'คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้', clearAll);
+        });
+
         courtCountInput.addEventListener('change', saveState);
         
         playerListContainer.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-player-btn');
             if (removeBtn) {
-                const playerId = parseFloat(removeBtn.getAttribute('data-player-id'));
-                removePlayer(playerId);
+                const playerId = parseFloat(removeBtn.dataset.playerId);
+                const playerName = removeBtn.dataset.playerName;
+                openConfirmModal('ยืนยันการลบผู้เล่น', `คุณแน่ใจหรือไม่ว่าต้องการลบ "${playerName}"?`, () => {
+                    removePlayer(playerId);
+                });
             }
         });
 
@@ -537,10 +588,24 @@
             }
         });
 
+        // Modal Listeners
         modalCloseBtn.addEventListener('click', closePlayerModal);
         playerModal.addEventListener('click', (e) => {
             if (e.target === playerModal) {
                 closePlayerModal();
+            }
+        });
+
+        confirmYesBtn.addEventListener('click', () => {
+            if (typeof pendingAction === 'function') {
+                pendingAction();
+            }
+            closeConfirmModal();
+        });
+        confirmNoBtn.addEventListener('click', closeConfirmModal);
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) {
+                closeConfirmModal();
             }
         });
 
