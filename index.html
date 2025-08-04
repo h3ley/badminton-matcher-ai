@@ -36,69 +36,73 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-    <div id="app" class="container mx-auto p-4 max-w-5xl">
+    <div id="app" class="container mx-auto p-3 max-w-5xl">
 
         <!-- Header -->
-        <header class="text-center my-6">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-700">🏸 โปรแกรมจัดคู่ตีแบด</h1>
-            <p class="text-slate-500 mt-1">สุ่มจัดสาย แบ่งทีม และนับจำนวนเกม</p>
+        <header class="text-center my-4">
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-700">🏸 โปรแกรมจัดคู่ตีแบด</h1>
+            <p class="text-slate-500 mt-1 text-sm">สุ่มจัดสาย แบ่งทีม และนับจำนวนเกม</p>
         </header>
 
         <!-- Setup Section -->
-        <section id="setup" class="bg-white p-6 rounded-2xl shadow-sm mb-8">
-            <div class="grid md:grid-cols-2 gap-6">
+        <section id="setup" class="bg-white p-4 rounded-2xl shadow-sm mb-6">
+            <div class="grid md:grid-cols-2 gap-4">
                 <!-- Player Input -->
                 <div>
-                    <label for="player-input-list" class="block text-lg font-medium text-slate-600 mb-2">เพิ่มผู้เล่น</label>
-                    <textarea id="player-input-list" rows="5" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="วางรายชื่อผู้เล่นที่นี่ (คนละบรรทัด)&#10;1. อ๋อม&#10;2. น้อย&#10;3. เบ้น"></textarea>
-                    <button id="add-players-btn" class="mt-3 w-full bg-sky-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-600 active:bg-sky-700 transition-colors shadow">
+                    <label for="player-input-list" class="block text-base font-medium text-slate-600 mb-2">เพิ่มผู้เล่น</label>
+                    <textarea id="player-input-list" rows="4" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition text-sm" placeholder="วางรายชื่อผู้เล่นที่นี่ (คนละบรรทัด)"></textarea>
+                    <button id="add-players-btn" class="mt-2 w-full bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 active:bg-sky-700 transition-colors shadow">
                         เพิ่มรายชื่อ
                     </button>
                 </div>
                 <!-- Court Input -->
                 <div>
-                    <label for="court-count" class="block text-lg font-medium text-slate-600 mb-2">จำนวนคอร์ด</label>
-                    <input type="number" id="court-count" value="2" min="1" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                    <label for="court-count" class="block text-base font-medium text-slate-600 mb-2">จำนวนคอร์ด</label>
+                    <input type="number" id="court-count" value="2" min="1" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
                 </div>
             </div>
         </section>
 
+        <!-- Clear All Button - New Position -->
+        <div class="text-right px-1 mb-2">
+             <button id="clear-all-btn" class="bg-red-500 text-white font-semibold py-1.5 px-4 rounded-full hover:bg-red-600 transition-colors text-xs">
+                ล้างข้อมูลทั้งหมด
+            </button>
+        </div>
+
         <!-- Player Overview Section -->
-        <section class="bg-white p-6 rounded-2xl shadow-sm mb-8">
-            <h3 class="text-xl font-semibold text-slate-700 mb-4 text-center">ผู้เล่นทั้งหมด (<span id="player-total-count">0</span>)</h3>
-            <div id="player-list-container" class="flex flex-wrap justify-center items-center gap-3 min-h-[4rem]">
+        <section class="bg-white p-4 rounded-2xl shadow-sm mb-6">
+            <h3 class="text-lg font-semibold text-slate-700 mb-3 text-center">ผู้เล่นทั้งหมด (<span id="player-total-count">0</span>)</h3>
+            <div id="player-list-container" class="flex flex-wrap justify-center items-center gap-2 min-h-[3rem]">
                 <!-- Player tags will be generated here -->
             </div>
         </section>
 
         <!-- Action Button -->
-        <div class="text-center mb-4">
-            <button id="generate-round-btn" class="bg-emerald-500 text-white font-bold py-4 px-8 rounded-full hover:bg-emerald-600 active:bg-emerald-700 transition-transform hover:scale-105 shadow-lg text-xl">
+        <div class="text-center mb-3">
+            <button id="generate-round-btn" class="bg-emerald-500 text-white font-bold py-3 px-6 rounded-full hover:bg-emerald-600 active:bg-emerald-700 transition-transform hover:scale-105 shadow-lg text-lg">
                 🚀 สุ่มจัดคู่รอบถัดไป
             </button>
         </div>
         
         <!-- Secondary Actions -->
-        <div id="actions-container" class="text-center mb-8 flex justify-center items-center gap-2 sm:gap-4">
-            <button id="reset-btn" class="bg-amber-500 text-white font-semibold py-2 px-5 rounded-full hover:bg-amber-600 transition-colors text-sm">
+        <div id="actions-container" class="text-center mb-6 flex justify-center items-center gap-2 sm:gap-4">
+            <button id="reset-btn" class="bg-amber-500 text-white font-semibold py-1.5 px-4 rounded-full hover:bg-amber-600 transition-colors text-xs">
                 รีเซ็ตเกม
-            </button>
-            <button id="clear-all-btn" class="bg-red-500 text-white font-semibold py-2 px-5 rounded-full hover:bg-red-600 transition-colors text-sm">
-                ล้างข้อมูลทั้งหมด
             </button>
         </div>
 
         <!-- Message Area -->
-        <div id="message-area" class="text-center text-red-500 font-semibold my-4"></div>
+        <div id="message-area" class="text-center text-red-500 font-semibold my-3"></div>
 
         <!-- Results Section -->
         <section id="results-section" class="hidden">
-            <h2 id="round-counter" class="text-2xl font-bold text-center mb-6 text-slate-700"></h2>
-            <div id="courts-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h2 id="round-counter" class="text-xl font-bold text-center mb-4 text-slate-700"></h2>
+            <div id="courts-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-center">
                 <!-- Court cards will be generated here -->
             </div>
-            <div id="resting-players-container" class="mt-8 bg-white p-5 rounded-2xl shadow-sm transition-colors duration-300">
-                <h3 class="text-xl font-semibold text-slate-600 mb-3">😴 ผู้เล่นที่พัก</h3>
+            <div id="resting-players-container" class="mt-6 bg-white p-4 rounded-2xl shadow-sm transition-colors duration-300">
+                <h3 class="text-lg font-semibold text-slate-600 mb-3">😴 ผู้เล่นที่พัก</h3>
                 <div id="resting-list" class="flex flex-wrap gap-2">
                     <!-- Resting player tags will be generated here -->
                 </div>
@@ -106,9 +110,9 @@
         </section>
 
         <!-- History Section -->
-        <section id="history-section" class="hidden mt-12">
-            <h2 class="text-2xl font-bold text-center mb-6 text-slate-700">📜 ประวัติการแข่งขัน</h2>
-            <div id="history-container" class="space-y-6">
+        <section id="history-section" class="hidden mt-10">
+            <h2 class="text-xl font-bold text-center mb-4 text-slate-700">📜 ประวัติการแข่งขัน</h2>
+            <div id="history-container" class="space-y-4">
                 <!-- History rounds will be generated here -->
             </div>
         </section>
@@ -116,12 +120,12 @@
 
     <!-- Player Selection Modal -->
     <div id="player-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
-            <h3 class="text-xl font-semibold mb-4">เลือกผู้เล่นมาแทน</h3>
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5">
+            <h3 class="text-lg font-semibold mb-4">เลือกผู้เล่นมาแทน</h3>
             <div id="modal-player-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                 <!-- Modal player list will be generated here -->
             </div>
-            <button id="modal-close-btn" class="mt-6 w-full bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+            <button id="modal-close-btn" class="mt-5 w-full bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
                 ยกเลิก
             </button>
         </div>
@@ -150,25 +154,59 @@
         const historySection = document.getElementById('history-section');
         const historyContainer = document.getElementById('history-container');
 
-
         // --- Application State ---
+        const STORAGE_KEY = 'badmintonMatcherState';
         let players = []; // Array of { id, name, gamesPlayed }
         let currentMatch = { round: 0, courts: [], resting: [] };
         let history = []; // Array of past matches
         let round = 0;
         let editingContext = null; // { historyIndex, courtIndex, teamIndex, playerIndex }
 
-        // --- Initial Data ---
-        const initialPlayers = "";
-
         // --- Functions ---
+
+        /**
+         * Saves the entire application state to localStorage.
+         */
+        function saveState() {
+            const state = {
+                players: players,
+                currentMatch: currentMatch,
+                history: history,
+                round: round,
+                courtCount: parseInt(courtCountInput.value, 10)
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        /**
+         * Loads the application state from localStorage.
+         */
+        function loadState() {
+            const savedState = localStorage.getItem(STORAGE_KEY);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                players = state.players || [];
+                currentMatch = state.currentMatch || { round: 0, courts: [], resting: [] };
+                history = state.history || [];
+                round = state.round || 0;
+                courtCountInput.value = state.courtCount || 2;
+
+                if (round > 0) {
+                    resultsSection.style.display = 'block';
+                }
+                if (history.length > 0) {
+                    historySection.style.display = 'block';
+                }
+                renderAll();
+            }
+        }
 
         /**
          * Parses player names from textarea and adds them to the state.
          */
         function handleAddPlayers() {
             const names = playerInputList.value.split('\n')
-                .map(name => name.replace(/^\d+\.\s*/, '').trim()) // Cleans up "1. Name" format
+                .map(name => name.replace(/^\d+\.\s*/, '').trim())
                 .filter(name => name.length > 0);
 
             names.forEach(name => {
@@ -182,15 +220,16 @@
             });
             playerInputList.value = '';
             renderPlayerList();
+            saveState();
         }
 
         /**
          * Removes a player from the list.
-         * @param {number} playerId - The ID of the player to remove.
          */
         function removePlayer(playerId) {
             players = players.filter(p => p.id !== playerId);
             renderPlayerList();
+            saveState();
         }
 
         /**
@@ -201,7 +240,7 @@
             playerTotalCount.textContent = players.length;
 
             if (players.length === 0) {
-                playerListContainer.innerHTML = `<p class="text-slate-400">ยังไม่มีผู้เล่น...</p>`;
+                playerListContainer.innerHTML = `<p class="text-slate-400 text-sm">ยังไม่มีผู้เล่น...</p>`;
                 return;
             }
 
@@ -209,19 +248,16 @@
 
             sortedPlayers.forEach(player => {
                 const playerTag = document.createElement('div');
-                playerTag.className = 'player-tag bg-slate-100 inline-flex items-center gap-2 py-2 pl-3 pr-1 rounded-full border border-slate-200 shadow-sm';
+                playerTag.className = 'player-tag bg-slate-100 inline-flex items-center gap-2 py-1 pl-2.5 pr-1 rounded-full border border-slate-200';
                 playerTag.innerHTML = `
-                    <span class="font-medium">${player.name}</span>
-                    <span class="text-sm bg-sky-100 text-sky-700 font-semibold w-12 text-center py-1 rounded-full">${player.gamesPlayed}</span>
-                    <button data-player-id="${player.id}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-lg leading-none w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
+                    <span class="font-medium text-sm">${player.name}</span>
+                    <span class="text-xs bg-sky-100 text-sky-700 font-semibold w-10 text-center py-0.5 rounded-full">${player.gamesPlayed}</span>
+                    <button data-player-id="${player.id}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-base leading-none w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
                 `;
                 playerListContainer.appendChild(playerTag);
             });
         }
         
-        /**
-         * Fisher-Yates shuffle algorithm.
-         */
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -229,9 +265,6 @@
             }
         }
 
-        /**
-         * Generates a new round of matches.
-         */
         function generateNewRound() {
             const numCourts = parseInt(courtCountInput.value, 10);
             const playersPerRound = numCourts * 4;
@@ -280,47 +313,40 @@
             }
             
             renderAll();
+            saveState();
         }
 
-        /**
-         * Renders the entire UI based on the current state.
-         */
         function renderAll() {
             renderPlayerList();
             renderMatches();
             renderHistory();
         }
 
-        /**
-         * Renders the current match results with a distinct style.
-         */
         function renderMatches() {
             roundCounter.textContent = `รอบปัจจุบัน (รอบที่ ${round})`;
             courtsContainer.innerHTML = '';
             restingList.innerHTML = '';
             
             if (round === 0) {
-                restingPlayersContainer.className = 'mt-8 bg-white p-5 rounded-2xl shadow-sm transition-colors duration-300';
+                resultsSection.style.display = 'none';
                 return;
             }
             
-            // Style the current resting players container
-            restingPlayersContainer.className = 'mt-8 bg-emerald-50 p-5 rounded-2xl shadow-sm transition-colors duration-300 border border-emerald-200';
-            restingPlayersContainer.querySelector('h3').className = 'text-xl font-semibold text-emerald-800 mb-3';
-
+            restingPlayersContainer.className = 'mt-6 bg-sky-50 p-4 rounded-2xl shadow-sm transition-colors duration-300 border border-sky-200';
+            restingPlayersContainer.querySelector('h3').className = 'text-lg font-semibold text-sky-800 mb-3';
 
             currentMatch.courts.forEach((court, courtIndex) => {
                 const courtCard = document.createElement('div');
-                courtCard.className = 'court-card bg-emerald-50 p-5 rounded-2xl shadow-sm fade-in border border-emerald-200';
+                courtCard.className = 'court-card bg-sky-50 p-4 rounded-2xl shadow-sm fade-in border border-sky-200';
                 courtCard.innerHTML = `
-                    <h3 class="text-xl font-semibold text-emerald-700 mb-4 border-b border-emerald-200 pb-2">คอร์ดที่ ${court.courtNum}</h3>
+                    <h3 class="text-lg font-semibold text-sky-700 mb-3 border-b border-sky-200 pb-2">คอร์ดที่ ${court.courtNum}</h3>
                     <div class="flex items-center justify-around text-center">
-                        <div class="team space-y-2">
+                        <div class="team space-y-1.5">
                             ${createPlayerHTML(court.team1[0], null, courtIndex, 0, 0)}
                             ${createPlayerHTML(court.team1[1], null, courtIndex, 0, 1)}
                         </div>
-                        <span class="text-slate-400 font-bold text-lg">VS</span>
-                        <div class="team space-y-2">
+                        <span class="text-slate-400 font-bold">VS</span>
+                        <div class="team space-y-1.5">
                             ${createPlayerHTML(court.team2[0], null, courtIndex, 1, 0)}
                             ${createPlayerHTML(court.team2[1], null, courtIndex, 1, 1)}
                         </div>
@@ -332,44 +358,46 @@
             if (currentMatch.resting.length > 0) {
                 currentMatch.resting.forEach(player => {
                     const restingTag = document.createElement('span');
-                    restingTag.className = 'bg-emerald-100 text-emerald-800 text-sm font-medium px-3 py-1.5 rounded-full';
+                    restingTag.className = 'bg-sky-100 text-sky-800 text-xs font-medium px-2.5 py-1 rounded-full';
                     restingTag.textContent = player.name;
                     restingList.appendChild(restingTag);
                 });
             } else {
-                restingList.innerHTML = `<p class="text-slate-400">ไม่มีผู้เล่นพัก</p>`;
+                restingList.innerHTML = `<p class="text-slate-400 text-sm">ไม่มีผู้เล่นพัก</p>`;
             }
         }
         
-        /**
-         * Renders the history of all past matches with a standard style.
-         */
         function renderHistory() {
             historyContainer.innerHTML = '';
             [...history].reverse().forEach((match, reverseIndex) => {
                 const historyIndex = history.length - 1 - reverseIndex;
                 const historyCard = document.createElement('div');
-                historyCard.className = 'history-card bg-white p-5 rounded-2xl shadow-sm fade-in border';
+                historyCard.className = 'history-card bg-white p-4 rounded-2xl shadow-sm fade-in border';
                 
                 let courtsHTML = match.courts.map((court, courtIndex) => `
-                    <div class="flex items-center justify-around text-center text-sm py-2 ${match.courts.length > 1 && courtIndex < match.courts.length - 1 ? 'border-b' : ''}">
-                        <div class="font-semibold text-slate-500 w-16">คอร์ด ${court.courtNum}</div>
-                        <div class="team flex gap-2 w-40 justify-center">
+                    <div class="flex items-center justify-around text-center text-xs py-1.5 ${match.courts.length > 1 && courtIndex < match.courts.length - 1 ? 'border-b' : ''}">
+                        <div class="font-semibold text-slate-500 w-14">คอร์ด ${court.courtNum}</div>
+                        <div class="team flex gap-1.5 w-32 justify-center">
                             ${createPlayerHTML(court.team1[0], historyIndex, courtIndex, 0, 0)}
                             ${createPlayerHTML(court.team1[1], historyIndex, courtIndex, 0, 1)}
                         </div>
-                        <span class="text-slate-300 font-bold">VS</span>
-                        <div class="team flex gap-2 w-40 justify-center">
+                        <span class="text-slate-300 font-bold text-sm">VS</span>
+                        <div class="team flex gap-1.5 w-32 justify-center">
                             ${createPlayerHTML(court.team2[0], historyIndex, courtIndex, 1, 0)}
                             ${createPlayerHTML(court.team2[1], historyIndex, courtIndex, 1, 1)}
                         </div>
                     </div>
                 `).join('');
 
-                let restingHTML = `<div class="text-xs text-slate-500 mt-2">พัก: ${match.resting.map(p => p.name).join(', ') || 'ไม่มี'}</div>`;
+                let restingHTML = `
+                    <div class="mt-2 pt-2 border-t border-slate-100 text-sm flex items-baseline gap-2">
+                        <strong class="text-slate-600 font-medium">พัก:</strong>
+                        <span class="text-slate-500 flex-wrap">${match.resting.map(p => p.name).join(', ') || 'ไม่มี'}</span>
+                    </div>
+                `;
 
                 historyCard.innerHTML = `
-                    <h3 class="text-lg font-semibold text-slate-600 mb-2">รอบที่ ${match.round}</h3>
+                    <h3 class="text-base font-semibold text-slate-600 mb-2">รอบที่ ${match.round}</h3>
                     ${courtsHTML}
                     ${restingHTML}
                 `;
@@ -377,14 +405,11 @@
             });
         }
 
-        /**
-         * Creates HTML for a single player slot, making it editable.
-         */
         function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, playerIndex) {
-            if (!player) return `<div class="p-2 w-24 h-9"></div>`; // Placeholder
+            if (!player) return `<div class="p-2 w-24 h-8"></div>`;
             const isHistory = historyIndex !== null;
             return `
-                <div class="player-slot bg-slate-100 p-2 rounded-lg w-28 text-center cursor-pointer hover:bg-slate-200 transition text-sm" 
+                <div class="player-slot bg-slate-100 p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs" 
                      ${isHistory ? `data-history-index="${historyIndex}"` : ''}
                      data-court-index="${courtIndex}" 
                      data-team-index="${teamIndex}" 
@@ -395,9 +420,6 @@
             `;
         }
         
-        /**
-         * Opens the player selection modal for editing a match slot.
-         */
         function openPlayerModal(context) {
             editingContext = context;
             modalPlayerList.innerHTML = '';
@@ -409,11 +431,11 @@
             const availableForSwap = players.filter(p => !playersInMatch.includes(p.id));
 
             if (availableForSwap.length === 0) {
-                 modalPlayerList.innerHTML = `<p class="text-slate-500 col-span-2 text-center">ไม่มีผู้เล่นที่พักให้สลับ</p>`;
+                 modalPlayerList.innerHTML = `<p class="text-slate-500 col-span-2 text-center text-sm">ไม่มีผู้เล่นที่พักให้สลับ</p>`;
             } else {
                 availableForSwap.forEach(player => {
                     const playerBtn = document.createElement('button');
-                    playerBtn.className = 'w-full text-left p-3 rounded-lg hover:bg-sky-100 transition';
+                    playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm';
                     playerBtn.textContent = player.name;
                     playerBtn.onclick = () => selectPlayerForSwap(player);
                     modalPlayerList.appendChild(playerBtn);
@@ -422,17 +444,11 @@
             playerModal.classList.add('is-open');
         }
 
-        /**
-         * Closes the player selection modal.
-         */
         function closePlayerModal() {
             playerModal.classList.remove('is-open');
             editingContext = null;
         }
 
-        /**
-         * Swaps a player in the match based on modal selection.
-         */
         function selectPlayerForSwap(newPlayer) {
             if (!editingContext) return;
 
@@ -466,12 +482,10 @@
             }
             
             renderAll();
+            saveState();
             closePlayerModal();
         }
 
-        /**
-         * Resets rounds, history, and game counts, but keeps the player list.
-         */
         function resetApp() {
             round = 0;
             history = [];
@@ -482,19 +496,17 @@
             historySection.style.display = 'none';
             messageArea.textContent = '';
 
-            // Reset resting container style
-            restingPlayersContainer.className = 'mt-8 bg-white p-5 rounded-2xl shadow-sm transition-colors duration-300';
-            restingPlayersContainer.querySelector('h3').className = 'text-xl font-semibold text-slate-600 mb-3';
+            restingPlayersContainer.className = 'mt-6 bg-white p-4 rounded-2xl shadow-sm transition-colors duration-300';
+            restingPlayersContainer.querySelector('h3').className = 'text-lg font-semibold text-slate-600 mb-3';
             
             renderPlayerList();
+            saveState();
         }
 
-        /**
-         * Clears all data from the application.
-         */
         function clearAll() {
             players = [];
-            resetApp(); // resetApp handles the rest of the state clearing
+            resetApp();
+            localStorage.removeItem(STORAGE_KEY);
         }
 
         // --- Event Listeners ---
@@ -502,6 +514,7 @@
         generateRoundBtn.addEventListener('click', generateNewRound);
         resetBtn.addEventListener('click', resetApp);
         clearAllBtn.addEventListener('click', clearAll);
+        courtCountInput.addEventListener('change', saveState);
         
         playerListContainer.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-player-btn');
@@ -532,12 +545,8 @@
         });
 
         // --- Initialization ---
-        function init() {
-            playerInputList.value = initialPlayers;
-            handleAddPlayers();
-        }
+        document.addEventListener('DOMContentLoaded', loadState);
 
-        init();
     </script>
 </body>
 </html>
