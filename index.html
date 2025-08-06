@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>โปรแกรมจัดคู่ตีแบดมินตัน</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/x-icon" href="/images/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -73,9 +72,18 @@
 
         <!-- Player Overview Section -->
         <section class="bg-white p-4 rounded-2xl shadow-sm mb-6">
-            <h3 class="text-lg font-semibold text-slate-700 mb-3 text-center">ผู้เล่นทั้งหมด (<span id="player-total-count">0</span>)</h3>
+            <div class="flex justify-center items-center mb-3">
+                <h3 class="text-lg font-semibold text-slate-700 text-center">ผู้เล่นทั้งหมด (<span id="player-total-count">0</span>)</h3>
+                <button id="toggle-stats-btn" class="ml-4 text-xs text-sky-600 hover:underline">ดูสถิติคู่</button>
+            </div>
             <div id="player-list-container" class="flex flex-wrap justify-center items-center gap-2 min-h-[3rem]">
                 <!-- Player tags will be generated here -->
+            </div>
+            <div id="stats-container" class="hidden mt-4 pt-4 border-t border-slate-200">
+                <h4 class="text-sm font-semibold text-center mb-2">สถิติการจับคู่ (Partner)</h4>
+                <div id="stats-list" class="text-xs text-slate-600 max-h-40 overflow-y-auto text-center">
+                    <!-- Stats will be generated here -->
+                </div>
             </div>
         </section>
 
@@ -169,6 +177,9 @@
         const messageArea = document.getElementById('message-area');
         const historySection = document.getElementById('history-section');
         const historyContainer = document.getElementById('history-container');
+        const toggleStatsBtn = document.getElementById('toggle-stats-btn');
+        const statsContainer = document.getElementById('stats-container');
+        const statsList = document.getElementById('stats-list');
         
         // Modals
         const playerModal = document.getElementById('player-modal');
@@ -190,132 +201,64 @@
         let pendingAction = null; // For confirmation modal
         const skillLevels = ['C', 'B', 'A'];
         const skillScores = { 'C': 1, 'B': 2, 'A': 3 };
+        let partnershipHistory = {}; // Key: "p1Id-p2Id", Value: count
 
-        // --- Functions ---
+        // --- FORWARD DECLARATIONS ---
+        let renderAll, renderPlayerList, renderMatches, renderHistory, createPlayerHTML, renderPartnershipStats;
 
-        /**
-         * Saves the entire application state to localStorage.
-         */
+        // --- State Management ---
         function saveState() {
-            const state = {
-                players: players,
-                currentMatch: currentMatch,
-                history: history,
-                round: round,
-                courtCount: parseInt(courtCountInput.value, 10)
-            };
+            const state = { players, currentMatch, history, round, courtCount: parseInt(courtCountInput.value, 10), partnershipHistory };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }
 
-        /**
-         * Loads the application state from localStorage.
-         */
         function loadState() {
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
                 const state = JSON.parse(savedState);
                 players = state.players || [];
-                // Add level property to old data if it doesn't exist
-                players.forEach(p => {
-                    if (!p.level) {
-                        p.level = 'C'; // Default level
-                    }
-                });
+                players.forEach(p => { if (!p.level) p.level = 'C'; });
                 currentMatch = state.currentMatch || { round: 0, courts: [], resting: [] };
                 history = state.history || [];
                 round = state.round || 0;
                 courtCountInput.value = state.courtCount || 2;
+                partnershipHistory = state.partnershipHistory || {};
 
-                if (round > 0) {
-                    resultsSection.style.display = 'block';
-                }
-                if (history.length > 0) {
-                    historySection.style.display = 'block';
-                }
+                if (round > 0) resultsSection.style.display = 'block';
+                if (history.length > 0) historySection.style.display = 'block';
                 renderAll();
             }
         }
 
-        /**
-         * Parses player names from textarea and adds them to the state.
-         */
+        // --- Player Management ---
         function handleAddPlayers() {
-            const names = playerInputList.value.split('\n')
-                .map(name => name.replace(/^\d+\.\s*/, '').trim())
-                .filter(name => name.length > 0);
-
+            const names = playerInputList.value.split('\n').map(name => name.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
             names.forEach(name => {
                 if (!players.some(p => p.name === name)) {
-                    players.push({
-                        id: Date.now() + Math.random(),
-                        name: name,
-                        gamesPlayed: 0,
-                        level: 'C' // Default level for new players
-                    });
+                    players.push({ id: Date.now() + Math.random(), name, gamesPlayed: 0, level: 'C' });
                 }
             });
             playerInputList.value = '';
-            renderPlayerList();
+            renderAll();
             saveState();
         }
 
-        /**
-         * Removes a player from the list.
-         */
         function removePlayer(playerId) {
             players = players.filter(p => p.id !== playerId);
-            renderPlayerList();
+            renderAll();
             saveState();
         }
 
-        /**
-         * Renders the list of all registered players as tags.
-         */
-        function renderPlayerList() {
-            playerListContainer.innerHTML = '';
-            playerTotalCount.textContent = players.length;
-
-            if (players.length === 0) {
-                playerListContainer.innerHTML = `<p class="text-slate-400 text-sm">ยังไม่มีผู้เล่น...</p>`;
-                return;
-            }
-
-            const sortedPlayers = [...players].sort((a, b) => a.gamesPlayed - b.gamesPlayed || a.name.localeCompare(b.name, 'th'));
-            
-            const levelColors = {
-                'C': 'bg-sky-500 text-white',
-                'B': 'bg-green-500 text-white',
-                'A': 'bg-orange-500 text-white'
-            };
-
-            sortedPlayers.forEach(player => {
-                const playerTag = document.createElement('div');
-                playerTag.className = 'player-tag bg-slate-100 inline-flex items-center gap-2 py-1 pl-2.5 pr-1 rounded-full border border-slate-200';
-                
-                playerTag.innerHTML = `
-                    <button data-player-id="${player.id}" class="level-btn ${levelColors[player.level]} text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full cursor-pointer transition-colors">${player.level}</button>
-                    <span class="font-medium text-sm">${player.name}</span>
-                    <span class="text-xs bg-slate-200 text-slate-600 font-semibold w-10 text-center py-0.5 rounded-full">${player.gamesPlayed}</span>
-                    <button data-player-id="${player.id}" data-player-name="${player.name}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-base leading-none w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
-                `;
-                playerListContainer.appendChild(playerTag);
-            });
-        }
-        
-        /**
-         * Changes a player's skill level.
-         */
         function changePlayerLevel(playerId) {
             const player = players.find(p => p.id === playerId);
             if (player) {
-                const currentLevelIndex = skillLevels.indexOf(player.level);
-                const nextLevelIndex = (currentLevelIndex + 1) % skillLevels.length;
-                player.level = skillLevels[nextLevelIndex];
+                player.level = skillLevels[(skillLevels.indexOf(player.level) + 1) % skillLevels.length];
                 renderPlayerList();
                 saveState();
             }
         }
 
+        // --- Core Matching Logic ---
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -323,51 +266,66 @@
             }
         }
 
-        /**
-         * Creates balanced matches from a pool of players.
-         */
         function createBalancedMatches(playerPool) {
             let courts = [];
             let pool = [...playerPool];
             
-            // 1. Create balanced teams by pairing strongest with weakest
+            const cPlayers = pool.filter(p => p.level === 'C');
+            while (cPlayers.length >= 4) {
+                const courtPlayers = cPlayers.splice(0, 4);
+                shuffleArray(courtPlayers);
+                courts.push({ team1: [courtPlayers[0], courtPlayers[1]], team2: [courtPlayers[2], courtPlayers[3]] });
+                pool = pool.filter(p => !courtPlayers.some(cp => cp.id === p.id));
+            }
+
             pool.sort((a, b) => skillScores[b.level] - skillScores[a.level]);
             const teams = [];
             while(pool.length >= 2) {
                 const player1 = pool.shift();
                 const player2 = pool.pop();
+                const key = [player1.id, player2.id].sort().join('-');
                 teams.push({
                     players: [player1, player2],
-                    score: skillScores[player1.level] + (player2 ? skillScores[player2.level] : 0)
+                    score: skillScores[player1.level] + (player2 ? skillScores[player2.level] : 0),
+                    penalty: (partnershipHistory[key] || 0) * 100
                 });
             }
 
-            // 2. Create balanced matches by pairing teams with the closest scores
-            teams.sort((a, b) => b.score - a.score);
-            while(teams.length >= 2) {
-                const team1 = teams.shift();
-                const team2 = teams.shift(); // Take the next strongest team
-                courts.push({
-                    team1: team1.players,
-                    team2: team2.players
-                });
+            const possibleMatches = [];
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    possibleMatches.push({
+                        teams: [teams[i], teams[j]],
+                        score: Math.abs(teams[i].score - teams[j].score) + teams[i].penalty + teams[j].penalty,
+                        indices: [i, j]
+                    });
+                }
+            }
+            possibleMatches.sort((a, b) => a.score - b.score);
+
+            const usedTeamIndices = new Set();
+            for (const match of possibleMatches) {
+                if (!usedTeamIndices.has(match.indices[0]) && !usedTeamIndices.has(match.indices[1])) {
+                    courts.push({ team1: match.teams[0].players, team2: match.teams[1].players });
+                    usedTeamIndices.add(match.indices[0]);
+                    usedTeamIndices.add(match.indices[1]);
+                }
             }
             
             shuffleArray(courts);
             return courts;
         }
 
-
+        // --- Round Management ---
         function generateNewRound() {
             const numCourts = parseInt(courtCountInput.value, 10);
             const playersPerRound = numCourts * 4;
-
-            messageArea.textContent = '';
 
             if (players.length < playersPerRound) {
                 messageArea.textContent = `ผู้เล่นไม่พอสำหรับ ${numCourts} คอร์ด (ต้องการ ${playersPerRound} คน, มี ${players.length} คน)`;
                 return;
             }
+            messageArea.textContent = '';
 
             if (round > 0) {
                 history.push(JSON.parse(JSON.stringify(currentMatch)));
@@ -375,28 +333,33 @@
 
             round++;
             resultsSection.style.display = 'block';
-            if (history.length > 0) {
-                historySection.style.display = 'block';
-            }
+            if (history.length > 0) historySection.style.display = 'block';
 
             let availablePlayers = [...players];
             shuffleArray(availablePlayers);
             availablePlayers.sort((a,b) => a.gamesPlayed - b.gamesPlayed);
             let playingPool = availablePlayers.slice(0, playersPerRound);
-            const restingNow = availablePlayers.slice(playersPerRound);
-            const playingNowIds = new Set(playingPool.map(p => p.id));
-
+            
             const courts = createBalancedMatches(playingPool);
+            
+            const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
 
             players.forEach(p => {
-                if (playingNowIds.has(p.id)) {
-                    p.gamesPlayed++;
-                }
+                if (playingNowIds.has(p.id)) p.gamesPlayed++;
             });
 
-            currentMatch.courts = courts.map((c, i) => ({ ...c, courtNum: i + 1 }));
-            currentMatch.resting = restingNow;
-            currentMatch.round = round;
+            courts.forEach(court => {
+                const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
+                const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
+                partnershipHistory[t1k] = (partnershipHistory[t1k] || 0) + 1;
+                partnershipHistory[t2k] = (partnershipHistory[t2k] || 0) + 1;
+            });
+
+            currentMatch = {
+                round,
+                courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
+                resting: players.filter(p => !playingNowIds.has(p.id))
+            };
             
             renderAll();
             saveState();
@@ -405,107 +368,79 @@
         function reshuffleCurrentRound() {
             if (round === 0) return;
 
-            // Revert gamesPlayed count for players in the current match
-            const playersInCurrentMatch = currentMatch.courts.flatMap(c => [...c.team1, ...c.team2]);
-            playersInCurrentMatch.forEach(playerInMatch => {
-                if(playerInMatch) {
-                    const originalPlayer = players.find(p => p.id === playerInMatch.id);
-                    if (originalPlayer) {
-                        originalPlayer.gamesPlayed--;
+            currentMatch.courts.forEach(court => {
+                [...court.team1, ...court.team2].forEach(player => {
+                    if (player) {
+                        const p = players.find(pl => pl.id === player.id);
+                        if (p) p.gamesPlayed--;
                     }
-                }
+                });
+                const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
+                const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
+                if (partnershipHistory[t1k]) partnershipHistory[t1k]--;
+                if (partnershipHistory[t2k]) partnershipHistory[t2k]--;
             });
 
-            // Now, generate a new match arrangement for the same round number
-            const numCourts = parseInt(courtCountInput.value, 10);
-            const playersPerRound = numCourts * 4;
-
-            if (players.length < playersPerRound) {
-                return;
-            }
-
-            let availablePlayers = [...players];
-            shuffleArray(availablePlayers);
-            availablePlayers.sort((a,b) => a.gamesPlayed - b.gamesPlayed);
-            let playingPool = availablePlayers.slice(0, playersPerRound);
-            const restingNow = availablePlayers.slice(playersPerRound);
-            const playingNowIds = new Set(playingPool.map(p => p.id));
-
-            const courts = createBalancedMatches(playingPool);
-
-            players.forEach(p => {
-                if (playingNowIds.has(p.id)) {
-                    p.gamesPlayed++;
-                }
-            });
-
-            currentMatch.courts = courts.map((c, i) => ({ ...c, courtNum: i + 1 }));
-            currentMatch.resting = restingNow;
-            
-            renderAll();
-            saveState();
+            round--; 
+            generateNewRound();
         }
 
         function reshuffleSingleCourt(courtIndex) {
             if (!currentMatch || !currentMatch.courts[courtIndex]) return;
 
-            // 1. Identify players in the target court and resting players
             const court = currentMatch.courts[courtIndex];
-            const playersInCourt = [...court.team1, ...court.team2].filter(Boolean);
-            const restingPlayers = currentMatch.resting;
-            
-            // Create a pool of players available for this specific reshuffle
-            const reshufflePool = [...playersInCourt, ...restingPlayers];
+            const originalPlayersInCourt = [...court.team1, ...court.team2].filter(Boolean);
+            const reshufflePool = [...originalPlayersInCourt, ...currentMatch.resting];
 
-            if (reshufflePool.length < 4) {
-                console.warn("Not enough players to reshuffle.");
-                return; 
-            }
+            if (reshufflePool.length < 4) return;
 
-            // 2. Update gamesPlayed counts BEFORE reshuffling
-            const originalPlayerIds = new Set(playersInCourt.map(p => p.id));
-            
             shuffleArray(reshufflePool);
             const newCourtPlayers = reshufflePool.slice(0, 4);
+            const newRestingPlayers = reshufflePool.slice(4);
+
+            const originalPlayerIds = new Set(originalPlayersInCourt.map(p => p.id));
             const newPlayerIds = new Set(newCourtPlayers.map(p => p.id));
 
-            // Decrement for players who left the court
             originalPlayerIds.forEach(id => {
                 if (!newPlayerIds.has(id)) {
                     const player = players.find(p => p.id === id);
                     if (player) player.gamesPlayed--;
                 }
             });
-            // Increment for players who entered the court
             newPlayerIds.forEach(id => {
                 if (!originalPlayerIds.has(id)) {
                     const player = players.find(p => p.id === id);
                     if (player) player.gamesPlayed++;
                 }
             });
+
+            const newTeams = createBalancedMatches(newCourtPlayers);
+            if (newTeams.length > 0) {
+                currentMatch.courts[courtIndex].team1 = newTeams[0].team1;
+                currentMatch.courts[courtIndex].team2 = newTeams[0].team2;
+            } else {
+                shuffleArray(newCourtPlayers);
+                currentMatch.courts[courtIndex].team1 = [newCourtPlayers[0], newCourtPlayers[1]];
+                currentMatch.courts[courtIndex].team2 = [newCourtPlayers[2], newCourtPlayers[3]];
+            }
             
-            // 3. The rest go back to the resting list
-            const newRestingPlayers = reshufflePool.slice(4);
-
-            // 4. Update the court with new, randomly assigned teams
-            currentMatch.courts[courtIndex].team1 = [newCourtPlayers[0], newCourtPlayers[1]];
-            currentMatch.courts[courtIndex].team2 = [newCourtPlayers[2], newCourtPlayers[3]];
-
-            // 5. Update the global resting list
             currentMatch.resting = newRestingPlayers;
-
-            // 6. Re-render everything to reflect changes and save
+            
             renderAll();
             saveState();
         }
 
-        function renderAll() {
+        // --- Rendering Functions (Defined here) ---
+        renderAll = function() {
             renderPlayerList();
             renderMatches();
             renderHistory();
+            if (!statsContainer.classList.contains('hidden')) {
+                renderPartnershipStats();
+            }
         }
 
-        function renderMatches() {
+        renderMatches = function() {
             roundCounter.textContent = `รอบปัจจุบัน (รอบที่ ${round})`;
             currentRoundContainer.innerHTML = '';
             restingList.innerHTML = '';
@@ -557,7 +492,7 @@
             }
         }
         
-        function renderHistory() {
+        renderHistory = function() {
             historyContainer.innerHTML = '';
             [...history].reverse().forEach((match, reverseIndex) => {
                 const historyIndex = history.length - 1 - reverseIndex;
@@ -595,7 +530,7 @@
             });
         }
 
-        function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, playerIndex) {
+        createPlayerHTML = function(player, historyIndex, courtIndex, teamIndex, playerIndex) {
             if (!player) return `<div class="p-2 w-24 h-8"></div>`;
             const isHistory = historyIndex !== null;
             const levelColors = {
@@ -615,8 +550,74 @@
                 </div>
             `;
         }
+
+        renderPlayerList = function() {
+            playerListContainer.innerHTML = '';
+            playerTotalCount.textContent = players.length;
+
+            if (players.length === 0) {
+                playerListContainer.innerHTML = `<p class="text-slate-400 text-sm">ยังไม่มีผู้เล่น...</p>`;
+                return;
+            }
+
+            const sortedPlayers = [...players].sort((a, b) => a.gamesPlayed - b.gamesPlayed || a.name.localeCompare(b.name, 'th'));
+            
+            const levelColors = {
+                'C': 'bg-sky-500 text-white',
+                'B': 'bg-green-500 text-white',
+                'A': 'bg-orange-500 text-white'
+            };
+
+            sortedPlayers.forEach(player => {
+                const playerTag = document.createElement('div');
+                playerTag.className = 'player-tag bg-slate-100 inline-flex items-center gap-2 py-1 pl-2.5 pr-1 rounded-full border border-slate-200';
+                
+                playerTag.innerHTML = `
+                    <button data-player-id="${player.id}" class="level-btn ${levelColors[player.level]} text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full cursor-pointer transition-colors">${player.level}</button>
+                    <span class="font-medium text-sm">${player.name}</span>
+                    <span class="text-xs bg-slate-200 text-slate-600 font-semibold w-10 text-center py-0.5 rounded-full">${player.gamesPlayed}</span>
+                    <button data-player-id="${player.id}" data-player-name="${player.name}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-base leading-none w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
+                `;
+                playerListContainer.appendChild(playerTag);
+            });
+        }
         
-        function openPlayerModal(context) {
+        renderPartnershipStats = function() {
+            statsList.innerHTML = '';
+            const stats = [];
+
+            for (const key in partnershipHistory) {
+                const count = partnershipHistory[key];
+                if (count > 0) {
+                    const [p1Id, p2Id] = key.split('-');
+                    const player1 = players.find(p => p.id == p1Id);
+                    const player2 = players.find(p => p.id == p2Id);
+
+                    if (player1 && player2) {
+                        stats.push({
+                            text: `${player1.name} & ${player2.name}: ${count} ครั้ง`,
+                            count: count
+                        });
+                    }
+                }
+            }
+
+            if (stats.length === 0) {
+                statsList.innerHTML = '<p>ยังไม่มีข้อมูลการจับคู่</p>';
+                return;
+            }
+
+            stats.sort((a, b) => b.count - a.count);
+
+            stats.forEach(stat => {
+                const p = document.createElement('p');
+                p.textContent = stat.text;
+                statsList.appendChild(p);
+            });
+        }
+        
+        // --- Modal Management ---
+        openPlayerModal = function(context) {
             editingContext = context;
             modalPlayerList.innerHTML = '';
             
@@ -625,14 +626,24 @@
             
             const playersInMatch = match.courts.flatMap(c => [...c.team1, ...c.team2]).filter(Boolean).map(p => p.id);
             const availableForSwap = players.filter(p => !playersInMatch.includes(p.id));
+            
+            const levelColors = {
+                'C': 'bg-sky-500 text-white',
+                'B': 'bg-green-500 text-white',
+                'A': 'bg-orange-500 text-white'
+            };
 
             if (availableForSwap.length === 0) {
                  modalPlayerList.innerHTML = `<p class="text-slate-500 col-span-2 text-center text-sm">ไม่มีผู้เล่นที่พักให้สลับ</p>`;
             } else {
                 availableForSwap.forEach(player => {
                     const playerBtn = document.createElement('button');
-                    playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm';
-                    playerBtn.textContent = player.name;
+                    playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm flex items-center gap-2';
+                    playerBtn.innerHTML = `
+                        <span class="${levelColors[player.level]} font-bold w-5 h-5 flex items-center justify-center rounded-full text-xs">${player.level}</span>
+                        <span class="flex-1">${player.name}</span>
+                        <span class="text-xs bg-slate-200 text-slate-600 font-semibold px-2 py-0.5 rounded-full">${player.gamesPlayed} เกม</span>
+                    `;
                     playerBtn.onclick = () => selectPlayerForSwap(player);
                     modalPlayerList.appendChild(playerBtn);
                 });
@@ -640,12 +651,12 @@
             playerModal.classList.add('is-open');
         }
 
-        function closePlayerModal() {
+        closePlayerModal = function() {
             playerModal.classList.remove('is-open');
             editingContext = null;
         }
 
-        function selectPlayerForSwap(newPlayer) {
+        selectPlayerForSwap = function(newPlayer) {
             if (!editingContext) return;
 
             const { historyIndex, courtIndex, teamIndex, playerIndex } = editingContext;
@@ -682,11 +693,12 @@
             closePlayerModal();
         }
 
-        function resetApp() {
+        resetApp = function() {
             round = 0;
             history = [];
             currentMatch = { round: 0, courts: [], resting: [] };
             players.forEach(p => p.gamesPlayed = 0);
+            partnershipHistory = {};
             
             resultsSection.style.display = 'none';
             historySection.style.display = 'none';
@@ -699,26 +711,20 @@
             saveState();
         }
 
-        function clearAll() {
+        clearAll = function() {
             players = [];
             resetApp();
             localStorage.removeItem(STORAGE_KEY);
         }
 
-        /**
-         * Opens a confirmation modal for risky actions.
-         */
-        function openConfirmModal(title, message, onConfirm) {
+        openConfirmModal = function(title, message, onConfirm) {
             confirmTitle.textContent = title;
             confirmMessage.textContent = message;
             pendingAction = onConfirm;
             confirmModal.classList.add('is-open');
         }
 
-        /**
-         * Closes the confirmation modal.
-         */
-        function closeConfirmModal() {
+        closeConfirmModal = function() {
             confirmModal.classList.remove('is-open');
             pendingAction = null;
         }
@@ -786,6 +792,16 @@
                     playerIndex: parseInt(slot.dataset.playerIndex, 10)
                 };
                 openPlayerModal(context);
+            }
+        });
+
+        toggleStatsBtn.addEventListener('click', () => {
+            const isHidden = statsContainer.classList.toggle('hidden');
+            if (!isHidden) {
+                renderPartnershipStats();
+                toggleStatsBtn.textContent = 'ซ่อนสถิติ';
+            } else {
+                toggleStatsBtn.textContent = 'ดูสถิติคู่';
             }
         });
 
