@@ -43,7 +43,6 @@ export function renderAll() {
 }
 
 export function renderMatches() {
-    console.log('Rendering current match:', state.currentMatch);
     dom.roundCounter.textContent = `รอบปัจจุบัน (รอบที่ ${state.round})`;
     dom.currentRoundContainer.innerHTML = '';
     dom.restingList.innerHTML = '';
@@ -101,7 +100,6 @@ export function renderMatches() {
 
 export function renderHistory() {
     dom.historyContainer.innerHTML = '';
-    console.log('Rendering history:', state.history);
     [...state.history].reverse().forEach((match, reverseIndex) => {
         const historyIndex = state.history.length - 1 - reverseIndex;
         const historyCard = document.createElement('div');
