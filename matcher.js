@@ -25,10 +25,25 @@ export function createBalancedMatches(playerPool) {
         const player1 = pool.shift();
         const player2 = pool.pop();
         const key = [player1.id, player2.id].sort().join('-');
+
+        const partnershipCount = partnershipHistory[key] || 0;
+        let penalty = 0;
+        if (partnershipCount >= 2) {
+            // ถ้าเคยคู่กันมาแล้ว 2 ครั้งขึ้นไป ให้ค่าปรับสูงมากๆ
+            penalty = 10000; 
+        } 
+            /*
+        else if (partnershipCount === 1) {
+            // ถ้าเคยคู่กันมา 1 ครั้ง ให้ค่าปรับปกติ
+            penalty = 100;
+        }
+            */
+        // ถ้าไม่เคยคู่กันเลย (0 ครั้ง) ค่าปรับจะเป็น 0
+
         teams.push({
             players: [player1, player2],
             score: skillScores[player1.level] + (player2 ? skillScores[player2.level] : 0),
-            penalty: (partnershipHistory[key] || 0) * 100
+            penalty: penalty
         });
     }
 
