@@ -66,7 +66,7 @@ function generateNewRound(IsNewRound = true) {
             p.gamesPlayed++;
             p.consecutiveRests = 0;
         } else {
-            p.consecutiveRests++;
+            p.consecutiveRests = countConsecutiveRests(p);
         }
     });
 
@@ -189,7 +189,7 @@ function selectPlayerForSwap(newPlayer) {
         const pNew = state.players.find(p => p.id === newPlayer.id);
         if(pOld) {
             pOld.gamesPlayed--;
-            pOld.consecutiveRests = 1;
+            pOld.consecutiveRests = countConsecutiveRests(pOld);
         }
         if(pNew) {
             pNew.gamesPlayed++;
@@ -230,6 +230,24 @@ function clearAll() {
     state.setPlayers([]);
     resetApp();
     localStorage.removeItem(state.STORAGE_KEY);
+}
+
+function countConsecutiveRests(player) {
+    let count = 0;
+
+    // ป้องกัน null และตรวจว่าผู้เล่นพักในรอบปัจจุบัน
+    if (!state.currentMatch?.resting?.some(p => p.id === player.id)) return 0;
+    count++;
+
+    // ไล่ย้อนใน history ถ้ายังพักอยู่ให้ count++
+    for (let i = state.history.length - 1; i >= 0; i--) {
+        if (state.history[i].resting?.some(p => p.id === player.id)) {
+            count++;
+        } else {
+            break;
+        }
+    }
+    return count;
 }
 
 // --- Event Listeners ---
