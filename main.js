@@ -219,8 +219,10 @@ function resetApp() {
     ui.dom.restingPlayersContainer.className = 'mt-6 bg-white p-4 rounded-2xl shadow-sm transition-colors duration-300';
     ui.dom.restingPlayersContainer.querySelector('h3').className = 'text-lg font-semibold text-slate-600 mb-3';
     
-    ui.dom.statsContainer.classList.toggle('hidden')
-    ui.dom.toggleStatsBtn.textContent = 'ดูสถิติคู่';
+    if (!ui.dom.statsContainer.classList.contains('hidden')) {
+        ui.dom.statsContainer.classList.add('hidden');
+        ui.dom.toggleStatsBtn.textContent = 'ดูสถิติคู่';
+    }
 
     ui.renderPlayerList();
     state.saveState(ui.dom.courtCountInput.value);
