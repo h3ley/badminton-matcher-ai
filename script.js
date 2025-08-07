@@ -540,7 +540,7 @@
             closePlayerModal();
         }
 
-        resetApp = function() {
+        resetresetApp = function() {
             round = 0;
             history = [];
             currentMatch = { round: 0, courts: [], resting: [] };
