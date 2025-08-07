@@ -54,7 +54,15 @@ function generateNewRound(IsNewRound = true) {
 
     let availablePlayers = [...state.players];
     shuffleArray(availablePlayers);
-    availablePlayers.sort((a,b) => a.gamesPlayed - b.gamesPlayed);
+    availablePlayers.sort((a, b) => {
+            // ให้ความสำคัญกับคนที่พัก 2 รอบก่อน (เรียงจากมากไปน้อย)
+            if (b.consecutiveRests >= 2 || a.consecutiveRests >= 2) {
+                return b.consecutiveRests - a.consecutiveRests;
+            }
+            // ถ้าไม่เข้าเงื่อนไข ให้ใช้เกณฑ์จำนวนเกมที่เล่นน้อยที่สุดเหมือนเดิม
+            return a.gamesPlayed - b.gamesPlayed;
+        });
+    
     let playingPool = availablePlayers.slice(0, playersPerRound);
     
     const courts = createBalancedMatches(playingPool);
