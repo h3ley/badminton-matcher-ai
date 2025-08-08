@@ -444,18 +444,6 @@ ui.dom.currentRoundContainer.addEventListener('click', (e) => {
     }
 });
 
-ui.dom.historyContainer.addEventListener('click', (e) => {
-     const slot = e.target.closest('.player-slot');
-    if (slot) {
-        editingContext = {
-            historyIndex: parseInt(slot.dataset.historyIndex, 10),
-            courtIndex: parseInt(slot.dataset.courtIndex, 10),
-            teamIndex: parseInt(slot.dataset.teamIndex, 10),
-            playerIndex: parseInt(slot.dataset.playerIndex, 10)
-        };
-        ui.openPlayerModal(editingContext, selectPlayerForSwap);
-    }
-});
 
 ui.dom.toggleStatsBtn.addEventListener('click', () => {
     const isHidden = ui.dom.statsContainer.classList.toggle('hidden');
@@ -496,7 +484,13 @@ ui.dom.historyContainer.addEventListener('click', (e) => {
 
      const slot = e.target.closest('.player-slot');
     if (slot) {
-        // ... โค้ดเดิมสำหรับกดที่ชื่อผู้เล่น ...
+        editingContext = {
+            historyIndex: parseInt(slot.dataset.historyIndex, 10),
+            courtIndex: parseInt(slot.dataset.courtIndex, 10),
+            teamIndex: parseInt(slot.dataset.teamIndex, 10),
+            playerIndex: parseInt(slot.dataset.playerIndex, 10)
+        };
+        ui.openPlayerModal(editingContext, selectPlayerForSwap);
     }
 });
 
