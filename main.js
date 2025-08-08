@@ -130,6 +130,23 @@ function reshuffleSingleCourt(courtIndex) {
 
     const court = state.currentMatch.courts[courtIndex];
     const originalPlayersInCourt = [...court.team1, ...court.team2].filter(Boolean);
+
+    // --- เพิ่มส่วนที่ 1: ลดจำนวนนับของคู่เดิม ---
+    const oldTeam1 = court.team1;
+    const oldTeam2 = court.team2;
+    if (oldTeam1[0] && oldTeam1[1]) {
+        const oldKey1 = [oldTeam1[0].id, oldTeam1[1].id].sort().join('-');
+        if (state.partnershipHistory[oldKey1]) {
+            state.partnershipHistory[oldKey1]--;
+        }
+    }
+    if (oldTeam2[0] && oldTeam2[1]) {
+        const oldKey2 = [oldTeam2[0].id, oldTeam2[1].id].sort().join('-');
+        if (state.partnershipHistory[oldKey2]) {
+            state.partnershipHistory[oldKey2]--;
+        }
+    }
+
     const reshufflePool = [...originalPlayersInCourt, ...state.currentMatch.resting];
 
     if (reshufflePool.length < 4) return;
@@ -161,6 +178,20 @@ function reshuffleSingleCourt(courtIndex) {
         shuffleArray(newCourtPlayers);
         state.currentMatch.courts[courtIndex].team1 = [newCourtPlayers[0], newCourtPlayers[1]];
         state.currentMatch.courts[courtIndex].team2 = [newCourtPlayers[2], newCourtPlayers[3]];
+    }
+    
+    // --- เพิ่มส่วนที่ 2: เพิ่มจำนวนนับของคู่ใหม่ ---
+    const newCourtSetup = state.currentMatch.courts[courtIndex];
+    const newTeam1 = newCourtSetup.team1;
+    const newTeam2 = newCourtSetup.team2;
+
+    if (newTeam1[0] && newTeam1[1]) {
+        const newKey1 = [newTeam1[0].id, newTeam1[1].id].sort().join('-');
+        state.partnershipHistory[newKey1] = (state.partnershipHistory[newKey1] || 0) + 1;
+    }
+    if (newTeam2[0] && newTeam2[1]) {
+        const newKey2 = [newTeam2[0].id, newTeam2[1].id].sort().join('-');
+        state.partnershipHistory[newKey2] = (state.partnershipHistory[newKey2] || 0) + 1;
     }
     
     state.setCurrentMatch({ ...state.currentMatch, resting: newRestingPlayers });
