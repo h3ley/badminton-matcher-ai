@@ -58,7 +58,29 @@ export function renderMatches() {
     const currentRoundCard = document.createElement('div');
     currentRoundCard.className = 'bg-sky-50 p-4 rounded-2xl shadow-sm fade-in border border-sky-200';
 
-    let courtsHTML = state.currentMatch.courts.map((court, courtIndex) => `
+    let courtsHTML = state.currentMatch.courts.map((court, courtIndex) => {
+        // --- เพิ่มโค้ดส่วนนี้เข้ามา ---
+    const getPartnershipCount = (p1, p2) => {
+        if (!p1 || !p2) return 0;
+        const key = [p1.id, p2.id].sort().join('-');
+        // เราต้อง -1 เพราะรอบปัจจุบันถูกนับไปแล้ว
+        return (state.partnershipHistory[key] || 1) ; 
+    };
+
+    const team1Count = getPartnershipCount(court.team1[0], court.team1[1]);
+    const team2Count = getPartnershipCount(court.team2[0], court.team2[1]);
+    const isTeam1Repeat = team1Count > 2;
+    const isTeam2Repeat = team2Count > 2;
+    const teamWarning = `bg-amber-200 border-amber-400`;
+    const team1Warning = isTeam1Repeat 
+        ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">${team1Count}</span>` 
+        : '';
+    const team2Warning = isTeam2Repeat 
+        ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">${team2Count}</span>` 
+        : '';
+    // --- สิ้นสุดส่วนที่เพิ่ม ---
+
+    return`
         <div class="flex items-center justify-around text-center text-sm py-2 ${state.currentMatch.courts.length > 1 && courtIndex < state.currentMatch.courts.length - 1 ? 'border-b border-sky-200' : ''}">
             <div class="font-semibold text-sky-700 w-20 flex items-center gap-2">
                 <span>คอร์ด ${court.courtNum}</span>
@@ -66,17 +88,19 @@ export function renderMatches() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>
                 </button>
             </div>
-            <div class="team flex gap-1.5 w-32 justify-center">
-                ${createPlayerHTML(court.team1[0], null, courtIndex, 0, 0)}
-                ${createPlayerHTML(court.team1[1], null, courtIndex, 0, 1)}
+            <div class="team flex gap-1.5 w-32 justify-center items-center rounded-md p-1 relative ${isTeam1Repeat ? teamWarning : ''}">
+                ${createPlayerHTML(court.team1[0], null, courtIndex, 0, 0, { isRepeat: isTeam1Repeat })}
+                ${createPlayerHTML(court.team1[1], null, courtIndex, 0, 1, { isRepeat: isTeam1Repeat })}
+                ${team1Warning}
             </div>
             <span class="text-slate-400 font-bold text-base">VS</span>
-            <div class="team flex gap-1.5 w-32 justify-center">
-                ${createPlayerHTML(court.team2[0], null, courtIndex, 1, 0)}
-                ${createPlayerHTML(court.team2[1], null, courtIndex, 1, 1)}
+            <div class="team flex gap-1.5 w-32 justify-center items-center rounded-md p-1 relative ${isTeam2Repeat ? teamWarning : ''}">
+                ${createPlayerHTML(court.team2[0], null, courtIndex, 1, 0, { isRepeat: isTeam2Repeat })}
+                ${createPlayerHTML(court.team2[1], null, courtIndex, 1, 1, { isRepeat: isTeam2Repeat })}
+                ${team2Warning}
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
     currentRoundCard.innerHTML = courtsHTML;
     dom.currentRoundContainer.appendChild(currentRoundCard);
@@ -136,7 +160,7 @@ export function renderHistory() {
     });
 }
 
-export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, playerIndex) {
+export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, playerIndex, options = {}) {
     if (!player) return `<div class="p-2 w-24 h-8"></div>`;
     const isHistory = historyIndex !== null;
     const levelColors = {
@@ -144,8 +168,14 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
         'B': 'bg-green-500 text-white',
         'A': 'bg-orange-500 text-white'
     };
-    return `
-        <div class="player-slot bg-slate-100 p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5" 
+
+    const { isRepeat = false } = options;
+    const slotClasses = isRepeat 
+        ? 'bg-amber-100 border-amber-400' 
+        : 'bg-slate-100 border-transparent';
+    
+     return `
+        <div class="player-slot p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5 relative ${slotClasses}" 
              ${isHistory ? `data-history-index="${historyIndex}"` : ''}
              data-court-index="${courtIndex}" 
              data-team-index="${teamIndex}" 
