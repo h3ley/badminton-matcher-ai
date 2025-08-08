@@ -350,6 +350,50 @@ function reshufflePlayingPool() {
     state.saveState(ui.dom.courtCountInput.value);
 }
 
+function deleteHistoryRound(historyIndex) {
+    // 1. ลบรอบที่เลือกออกจากประวัติ
+    state.history.splice(historyIndex, 1);
+    
+    // 2. คำนวณสถิติทั้งหมดใหม่ตั้งแต่ต้น
+    // รีเซ็ตค่าสถิติของผู้เล่นทุกคน
+    state.setPlayers(state.players.map(p => ({ ...p, gamesPlayed: 0, consecutiveRests: 0 })));
+    state.setPartnershipHistory({});
+
+    // สร้างลำดับเวลาของแมตช์ที่ยังเหลืออยู่ทั้งหมด
+    const fullTimeline = [...state.history, state.currentMatch];
+
+    // วนลูปคำนวณสถิติใหม่ทั้งหมดจาก Timeline
+    fullTimeline.forEach(match => {
+        if (match.round === 0) return;
+
+        const playingIds = new Set(match.courts.flatMap(c => [...c.team1, ...c.team2]).filter(Boolean).map(p => p.id));
+        
+        state.players.forEach(p => {
+            if (playingIds.has(p.id)) {
+                p.gamesPlayed++;
+                p.consecutiveRests = 0;
+            } else {
+                p.consecutiveRests++;
+            }
+        });
+
+        match.courts.forEach(court => {
+            if (court.team1[0] && court.team1[1]) {
+                const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
+                state.partnershipHistory[t1k] = (state.partnershipHistory[t1k] || 0) + 1;
+            }
+            if (court.team2[0] && court.team2[1]) {
+                const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
+                state.partnershipHistory[t2k] = (state.partnershipHistory[t2k] || 0) + 1;
+            }
+        });
+    });
+
+    // 3. แสดงผลหน้าเว็บใหม่และบันทึกข้อมูล
+    ui.renderAll();
+    state.saveState(ui.dom.courtCountInput.value);
+}
+
 // --- Event Listeners ---
 ui.dom.addPlayersBtn.addEventListener('click', handleAddPlayers);
 ui.dom.generateRoundBtn.addEventListener('click', generateNewRound);
@@ -436,6 +480,24 @@ ui.dom.confirmYesBtn.addEventListener('click', () => {
 ui.dom.confirmNoBtn.addEventListener('click', ui.closeConfirmModal);
 ui.dom.confirmModal.addEventListener('click', (e) => {
     if (e.target === ui.dom.confirmModal) ui.closeConfirmModal();
+});
+
+ui.dom.historyContainer.addEventListener('click', (e) => {
+    const deleteBtn = e.target.closest('.delete-history-btn');
+    if (deleteBtn) {
+        const historyIndex = parseInt(deleteBtn.dataset.historyIndex, 10);
+        pendingAction = ui.openConfirmModal(
+            'ยืนยันการลบรอบ', 
+            `คุณแน่ใจหรือไม่ว่าต้องการลบรอบที่ ${state.history[historyIndex].round}? การกระทำนี้จะคำนวณสถิติใหม่ทั้งหมด`, 
+            () => deleteHistoryRound(historyIndex)
+        );
+        return;
+    }
+
+     const slot = e.target.closest('.player-slot');
+    if (slot) {
+        // ... โค้ดเดิมสำหรับกดที่ชื่อผู้เล่น ...
+    }
 });
 
 // --- Initialization ---

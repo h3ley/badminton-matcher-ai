@@ -128,7 +128,7 @@ export function renderHistory() {
     [...state.history].reverse().forEach((match, reverseIndex) => {
         const historyIndex = state.history.length - 1 - reverseIndex;
         const historyCard = document.createElement('div');
-        historyCard.className = 'history-card bg-white p-4 rounded-2xl shadow-sm border';
+        historyCard.className = 'history-card bg-white p-4 rounded-2xl shadow-sm border relative';
         
         let courtsHTML = match.courts.map((court, courtIndex) => `
             <div class="flex items-center justify-around text-center text-xs py-1.5 ${match.courts.length > 1 && courtIndex < match.courts.length - 1 ? 'border-b' : ''}">
@@ -153,6 +153,13 @@ export function renderHistory() {
         `;
 
         historyCard.innerHTML = `
+            <button 
+                class="delete-history-btn absolute top-2 right-2 text-slate-400 hover:text-red-500 font-bold text-lg leading-none w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors" 
+                data-history-index="${historyIndex}" 
+                title="ลบรอบนี้">
+                &times;
+            </button>
+            
             <h3 class="text-base font-semibold text-slate-600 mb-2">รอบที่ ${match.round}</h3>
             ${courtsHTML}
             ${restingHTML}
