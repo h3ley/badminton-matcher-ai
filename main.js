@@ -185,6 +185,14 @@ function selectPlayerForSwap(newPlayer) {
         return;
     }
 
+    const oldPartner = matchToEdit.courts[courtIndex][teamKey][playerIndex === 0 ? 1 : 0];
+    if (oldPlayer && oldPartner) {
+    const oldKey = [oldPlayer.id, oldPartner.id].sort().join('-');
+    if (state.partnershipHistory[oldKey]) {
+        state.partnershipHistory[oldKey]--;
+    }
+}
+
     const restingIndex = matchToEdit.resting.findIndex(p => p.id === newPlayer.id);
 
     if (restingIndex !== -1) {
@@ -203,6 +211,12 @@ function selectPlayerForSwap(newPlayer) {
             pNew.gamesPlayed++;
             pNew.consecutiveRests = 0;
         }
+    }
+
+    const newPartner = oldPartner; // พาร์ทเนอร์ยังคงเป็นคนเดิม
+    if (newPlayer && newPartner) {
+        const newKey = [newPlayer.id, newPartner.id].sort().join('-');
+        state.partnershipHistory[newKey] = (state.partnershipHistory[newKey] || 0) + 1;
     }
     
     ui.renderAll();
