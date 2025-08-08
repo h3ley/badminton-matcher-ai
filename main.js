@@ -353,9 +353,21 @@ function reshufflePlayingPool() {
 function deleteHistoryRound(historyIndex) {
     // 1. ลบรอบที่เลือกออกจากประวัติ
     state.history.splice(historyIndex, 1);
-    
-    // 2. คำนวณสถิติทั้งหมดใหม่ตั้งแต่ต้น
-    // รีเซ็ตค่าสถิติของผู้เล่นทุกคน
+
+    // --- เพิ่มส่วนที่ 2: รันลำดับรอบใหม่ทั้งหมด ---
+    // วนลูปอัปเดตเลขรอบใน history ที่เหลือ
+    for (let i = historyIndex; i < state.history.length; i++) {
+        state.history[i].round--;
+    }
+    // อัปเดตเลขรอบของรอบปัจจุบันด้วย
+    if (state.currentMatch.round > 0) {
+        state.currentMatch.round--;
+    }
+    // ลดจำนวนรอบทั้งหมดลง 1
+    state.setRound(state.round - 1);
+    // --- สิ้นสุดส่วนที่เพิ่ม ---
+
+    // 3. คำนวณสถิติทั้งหมดใหม่ตั้งแต่ต้น (เหมือนเดิม)
     state.setPlayers(state.players.map(p => ({ ...p, gamesPlayed: 0, consecutiveRests: 0 })));
     state.setPartnershipHistory({});
 
