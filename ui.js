@@ -30,6 +30,7 @@ export const dom = {
     confirmMessage: document.getElementById('confirm-message'),
     confirmYesBtn: document.getElementById('confirm-yes-btn'),
     confirmNoBtn: document.getElementById('confirm-no-btn'),
+    swapPairsBtn: document.getElementById('swap-pairs-btn')
 };
 
 // --- Rendering Functions ---

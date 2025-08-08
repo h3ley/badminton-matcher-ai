@@ -179,7 +179,7 @@ function reshuffleSingleCourt(courtIndex) {
         state.currentMatch.courts[courtIndex].team1 = [newCourtPlayers[0], newCourtPlayers[1]];
         state.currentMatch.courts[courtIndex].team2 = [newCourtPlayers[2], newCourtPlayers[3]];
     }
-    
+
     // --- เพิ่มส่วนที่ 2: เพิ่มจำนวนนับของคู่ใหม่ ---
     const newCourtSetup = state.currentMatch.courts[courtIndex];
     const newTeam1 = newCourtSetup.team1;
@@ -305,10 +305,56 @@ function countConsecutiveRests(player) {
     return count;
 }
 
+// ... เพิ่มฟังก์ชันใหม่นี้เข้าไปในไฟล์ main.js ...
+function reshufflePlayingPool() {
+    if (state.round === 0) return;
+
+    // 1. ดึงผู้เล่นที่กำลังเล่นอยู่ทั้งหมดออกมา
+    const playingPool = state.currentMatch.courts.flatMap(c => [...c.team1, ...c.team2]).filter(Boolean);
+
+    // 2. ลดจำนวนนับของคู่พาร์ทเนอร์เดิมที่กำลังจะถูกสลับ
+    state.currentMatch.courts.forEach(court => {
+        if (court.team1[0] && court.team1[1]) {
+            const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
+            if (state.partnershipHistory[t1k]) state.partnershipHistory[t1k]--;
+        }
+        if (court.team2[0] && court.team2[1]) {
+            const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
+            if (state.partnershipHistory[t2k]) state.partnershipHistory[t2k]--;
+        }
+    });
+
+    // 3. สร้างการจับคู่ที่สมดุลขึ้นมาใหม่จากผู้เล่นกลุ่มเดิม
+    const newCourts = createBalancedMatches(playingPool);
+
+    // 4. เพิ่มจำนวนนับให้กับคู่พาร์ทเนอร์ใหม่ที่เพิ่งสร้างขึ้น
+    newCourts.forEach(court => {
+        if (court.team1[0] && court.team1[1]) {
+            const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
+            state.partnershipHistory[t1k] = (state.partnershipHistory[t1k] || 0) + 1;
+        }
+        if (court.team2[0] && court.team2[1]) {
+            const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
+            state.partnershipHistory[t2k] = (state.partnershipHistory[t2k] || 0) + 1;
+        }
+    });
+
+    // 5. อัปเดตคอร์ดในรอบปัจจุบัน (โดยไม่เปลี่ยนคนที่พัก)
+    state.setCurrentMatch({
+        ...state.currentMatch,
+        courts: newCourts.map((c, i) => ({ ...c, courtNum: i + 1 }))
+    });
+
+    // 6. แสดงผลและบันทึกข้อมูล
+    ui.renderAll();
+    state.saveState(ui.dom.courtCountInput.value);
+}
+
 // --- Event Listeners ---
 ui.dom.addPlayersBtn.addEventListener('click', handleAddPlayers);
 ui.dom.generateRoundBtn.addEventListener('click', generateNewRound);
 ui.dom.reshuffleBtn.addEventListener('click', reshuffleCurrentRound);
+ui.dom.swapPairsBtn.addEventListener('click', reshufflePlayingPool);
 
 ui.dom.resetBtn.addEventListener('click', () => {
     pendingAction = ui.openConfirmModal('ยืนยันการรีเซ็ตเกม', 'คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตเกม? จำนวนเกมของผู้เล่นทั้งหมดจะถูกตั้งเป็น 0', resetApp);
