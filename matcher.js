@@ -102,7 +102,11 @@ export function createBalancedMatches(playerPool) {
             });
         }
     }
-    possibleMatches.sort((a, b) => a.score - b.score);
+
+    possibleMatches.sort((a, b) => {
+        const d = a.score - b.score;
+        return d !== 0 ? d : (Math.random() - 0.5);
+    });
 
     const usedTeamIndices = new Set();
     for (const match of possibleMatches) {
