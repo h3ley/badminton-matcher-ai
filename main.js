@@ -39,7 +39,7 @@ function generateNewRound(IsNewRound = true) {
     const playersPerRound = numCourts * 4;
 
     if (state.players.length < playersPerRound) {
-        ui.dom.messageArea.textContent = `ผู้เล่นไม่พอสำหรับ ${numCourts} คอร์ด (ต้องการ ${playersPerRound} คน, มี ${players.length} คน)`;
+        ui.dom.messageArea.textContent = `ผู้เล่นไม่พอสำหรับ ${numCourts} คอร์ด (ต้องการ ${playersPerRound} คน, มี ${state.players.length} คน)`;
         return;
     }
     ui.dom.messageArea.textContent = '';
