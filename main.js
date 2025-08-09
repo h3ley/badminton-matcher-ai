@@ -68,7 +68,7 @@ function generateNewRound(IsNewRound = true) {
     const courts = createBalancedMatches(playingPool);
     
     const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
-    
+
     state.setCurrentMatch({
         round: state.round,
         courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
@@ -158,17 +158,22 @@ function reshuffleSingleCourt(courtIndex) {
 
     const originalPlayerIds = new Set(originalPlayersInCourt.map(p => p.id));
     const newPlayerIds = new Set(newCourtPlayers.map(p => p.id));
+    
+    
+    state.setCurrentMatch({ ...state.currentMatch, resting: newRestingPlayers });
 
     state.players.forEach(p => {
         const wasPlaying = originalPlayerIds.has(p.id);
         const isPlaying = newPlayerIds.has(p.id);
-        if(wasPlaying && !isPlaying) {
+
+        if (wasPlaying && !isPlaying) {        // ออกจากคอร์ด → กลายเป็นพัก
             p.gamesPlayed--;
-            p.consecutiveRests = (p.consecutiveRests || 0) + 1;
-        } else if (!wasPlaying && isPlaying) {
+        } else if (!wasPlaying && isPlaying) { // จากพัก → เข้าคอร์ด
             p.gamesPlayed++;
-            p.consecutiveRests = 0;
         }
+
+        // ใช้มาตรฐานเดียวกัน: ถ้าเล่นอยู่ = 0, ถ้าพัก = ให้นับด้วยตัวช่วย
+        p.consecutiveRests = isPlaying ? 0 : countConsecutiveRests(p);
     });
 
     const newTeams = createBalancedMatches(newCourtPlayers);
@@ -194,8 +199,6 @@ function reshuffleSingleCourt(courtIndex) {
         const newKey2 = [newTeam2[0].id, newTeam2[1].id].sort().join('-');
         state.partnershipHistory[newKey2] = (state.partnershipHistory[newKey2] || 0) + 1;
     }
-    
-    state.setCurrentMatch({ ...state.currentMatch, resting: newRestingPlayers });
     
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
