@@ -12,6 +12,7 @@ export function createBalancedMatches(playerPool) {
     let pool = [...playerPool];
     
     const cPlayers = pool.filter(p => p.level === 'C');
+    shuffleArray(cPlayers);
     while (cPlayers.length > 4) {
         const courtPlayers = cPlayers.splice(0, 4);
         shuffleArray(courtPlayers);
