@@ -55,8 +55,8 @@ function generateNewRound(IsNewRound = true) {
     let availablePlayers = [...state.players];
     shuffleArray(availablePlayers);
     availablePlayers.sort((a, b) => {
-            // ให้ความสำคัญกับคนที่พัก 2 รอบก่อน (เรียงจากมากไปน้อย)
-            if (b.consecutiveRests >= 2 || a.consecutiveRests >= 2) {
+            // ให้ความสำคัญกับคนที่พักก่อน (เรียงจากมากไปน้อย)
+            if (a.consecutiveRests !== b.consecutiveRests) {
                 return b.consecutiveRests - a.consecutiveRests;
             }
             // ถ้าไม่เข้าเงื่อนไข ให้ใช้เกณฑ์จำนวนเกมที่เล่นน้อยที่สุดเหมือนเดิม
@@ -69,6 +69,12 @@ function generateNewRound(IsNewRound = true) {
     
     const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
 
+    state.setCurrentMatch({
+        round: state.round,
+        courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
+        resting: state.players.filter(p => !playingNowIds.has(p.id))
+    });
+    
     state.players.forEach(p => {
         if (playingNowIds.has(p.id)) {
             p.gamesPlayed++;
@@ -81,16 +87,10 @@ function generateNewRound(IsNewRound = true) {
     courts.forEach(court => {
         const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
         const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
-        state.partnershipHistory[t1k] = (state.partnershipHistory[t1k] || 0) + 1;
-        state.partnershipHistory[t2k] = (state.partnershipHistory[t2k] || 0) + 1;
+        for (const key of [t1k, t2k]) changePartnershipCount(key, +1);
     });
 
-    state.setCurrentMatch({
-        round: state.round,
-        courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
-        resting: state.players.filter(p => !playingNowIds.has(p.id))
-    });
-    
+
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
 }
@@ -107,18 +107,7 @@ function reshuffleCurrentRound() {
         });
         const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
         const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
-        if (state.partnershipHistory[t1k]) state.partnershipHistory[t1k]--;
-        if (state.partnershipHistory[t2k]) state.partnershipHistory[t2k]--;
-    });
-
-    state.players.forEach(p => {
-        const wasPlaying = state.currentMatch.courts.flatMap(c => [...c.team1, ...c.team2]).some(pl => pl && pl.id === p.id);
-        const wasResting = state.currentMatch.resting.some(pl => pl.id === p.id);
-        if (wasPlaying) {
-            p.consecutiveRests = state.history.length > 0 ? (state.history[state.history.length-1].resting.some(hp => hp.id === p.id) ? (p.consecutiveRests || 0) + 1 : 1) : 0;
-        } else if(wasResting) {
-            if (p.consecutiveRests > 0) p.consecutiveRests--;
-        }
+        for (const key of [t1k, t2k]) changePartnershipCount(key, -1);
     });
 
     state.setRound(state.round - 1);
@@ -136,15 +125,11 @@ function reshuffleSingleCourt(courtIndex) {
     const oldTeam2 = court.team2;
     if (oldTeam1[0] && oldTeam1[1]) {
         const oldKey1 = [oldTeam1[0].id, oldTeam1[1].id].sort().join('-');
-        if (state.partnershipHistory[oldKey1]) {
-            state.partnershipHistory[oldKey1]--;
-        }
+        changePartnershipCount(oldKey1, -1)
     }
     if (oldTeam2[0] && oldTeam2[1]) {
         const oldKey2 = [oldTeam2[0].id, oldTeam2[1].id].sort().join('-');
-        if (state.partnershipHistory[oldKey2]) {
-            state.partnershipHistory[oldKey2]--;
-        }
+        changePartnershipCount(oldKey2, -1)
     }
 
     const reshufflePool = [...originalPlayersInCourt, ...state.currentMatch.resting];
@@ -157,17 +142,22 @@ function reshuffleSingleCourt(courtIndex) {
 
     const originalPlayerIds = new Set(originalPlayersInCourt.map(p => p.id));
     const newPlayerIds = new Set(newCourtPlayers.map(p => p.id));
+    
+    
+    state.setCurrentMatch({ ...state.currentMatch, resting: newRestingPlayers });
 
     state.players.forEach(p => {
         const wasPlaying = originalPlayerIds.has(p.id);
         const isPlaying = newPlayerIds.has(p.id);
-        if(wasPlaying && !isPlaying) {
+
+        if (wasPlaying && !isPlaying) {        // ออกจากคอร์ด → กลายเป็นพัก
             p.gamesPlayed--;
-            p.consecutiveRests = (p.consecutiveRests || 0) + 1;
-        } else if (!wasPlaying && isPlaying) {
+        } else if (!wasPlaying && isPlaying) { // จากพัก → เข้าคอร์ด
             p.gamesPlayed++;
-            p.consecutiveRests = 0;
         }
+
+        // ใช้มาตรฐานเดียวกัน: ถ้าเล่นอยู่ = 0, ถ้าพัก = ให้นับด้วยตัวช่วย
+        p.consecutiveRests = isPlaying ? 0 : countConsecutiveRests(p);
     });
 
     const newTeams = createBalancedMatches(newCourtPlayers);
@@ -187,14 +177,12 @@ function reshuffleSingleCourt(courtIndex) {
 
     if (newTeam1[0] && newTeam1[1]) {
         const newKey1 = [newTeam1[0].id, newTeam1[1].id].sort().join('-');
-        state.partnershipHistory[newKey1] = (state.partnershipHistory[newKey1] || 0) + 1;
+        changePartnershipCount(newKey1, +1)
     }
     if (newTeam2[0] && newTeam2[1]) {
         const newKey2 = [newTeam2[0].id, newTeam2[1].id].sort().join('-');
-        state.partnershipHistory[newKey2] = (state.partnershipHistory[newKey2] || 0) + 1;
+        changePartnershipCount(newKey2, +1)
     }
-    
-    state.setCurrentMatch({ ...state.currentMatch, resting: newRestingPlayers });
     
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
@@ -219,9 +207,7 @@ function selectPlayerForSwap(newPlayer) {
     const oldPartner = matchToEdit.courts[courtIndex][teamKey][playerIndex === 0 ? 1 : 0];
     if (oldPlayer && oldPartner) {
     const oldKey = [oldPlayer.id, oldPartner.id].sort().join('-');
-    if (state.partnershipHistory[oldKey]) {
-        state.partnershipHistory[oldKey]--;
-    }
+    changePartnershipCount(oldKey, -1)
 }
 
     const restingIndex = matchToEdit.resting.findIndex(p => p.id === newPlayer.id);
@@ -247,7 +233,7 @@ function selectPlayerForSwap(newPlayer) {
     const newPartner = oldPartner; // พาร์ทเนอร์ยังคงเป็นคนเดิม
     if (newPlayer && newPartner) {
         const newKey = [newPlayer.id, newPartner.id].sort().join('-');
-        state.partnershipHistory[newKey] = (state.partnershipHistory[newKey] || 0) + 1;
+        changePartnershipCount(newKey, +1)
     }
     
     ui.renderAll();
@@ -316,11 +302,11 @@ function reshufflePlayingPool() {
     state.currentMatch.courts.forEach(court => {
         if (court.team1[0] && court.team1[1]) {
             const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
-            if (state.partnershipHistory[t1k]) state.partnershipHistory[t1k]--;
+            changePartnershipCount(t1k, -1);
         }
         if (court.team2[0] && court.team2[1]) {
             const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
-            if (state.partnershipHistory[t2k]) state.partnershipHistory[t2k]--;
+            changePartnershipCount(t2k, -1);
         }
     });
 
@@ -331,11 +317,11 @@ function reshufflePlayingPool() {
     newCourts.forEach(court => {
         if (court.team1[0] && court.team1[1]) {
             const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
-            state.partnershipHistory[t1k] = (state.partnershipHistory[t1k] || 0) + 1;
+            changePartnershipCount(t1k, +1)
         }
         if (court.team2[0] && court.team2[1]) {
             const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
-            state.partnershipHistory[t2k] = (state.partnershipHistory[t2k] || 0) + 1;
+            changePartnershipCount(t2k, +1)
         }
     });
 
@@ -392,11 +378,11 @@ function deleteHistoryRound(historyIndex) {
         match.courts.forEach(court => {
             if (court.team1[0] && court.team1[1]) {
                 const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
-                state.partnershipHistory[t1k] = (state.partnershipHistory[t1k] || 0) + 1;
+                changePartnershipCount(t1k, +1);
             }
             if (court.team2[0] && court.team2[1]) {
                 const t2k = [court.team2[0].id, court.team2[1].id].sort().join('-');
-                state.partnershipHistory[t2k] = (state.partnershipHistory[t2k] || 0) + 1;
+                changePartnershipCount(t2k, +1);
             }
         });
     });
@@ -404,6 +390,17 @@ function deleteHistoryRound(historyIndex) {
     // 3. แสดงผลหน้าเว็บใหม่และบันทึกข้อมูล
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
+}
+
+function changePartnershipCount(key, delta) {
+  const h = state.partnershipHistory;
+  const cur = h[key] || 0;
+  const next = cur + delta;
+  if (next <= 0) {
+    if (h[key] !== undefined) delete h[key]; // กันค่าติดลบและเก็บบ้านให้สะอาด
+  } else {
+    h[key] = next;
+  }
 }
 
 // --- Event Listeners ---

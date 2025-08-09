@@ -148,7 +148,13 @@ export function renderHistory() {
         let restingHTML = `
             <div class="mt-2 pt-2 border-t border-slate-100 text-sm flex items-baseline gap-2">
                 <strong class="text-slate-600 font-medium">พัก:</strong>
-                <span class="text-slate-500 flex-wrap">${match.resting.map(p => p.name).join(', ') || 'ไม่มี'}</span>
+                <span class="text-slate-500 flex-wrap">${
+                    (match.resting && match.resting.length)
+                        ? match.resting
+                            .map(p => p.consecutiveRests > 1 ? `${p.name}<span class="text-amber-500 font-bold pl-0.5">${p.consecutiveRests}</span>` : p.name)
+                            .join(', ')
+                        : 'ไม่มี'
+                }</span>
             </div>
         `;
 

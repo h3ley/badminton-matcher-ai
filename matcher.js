@@ -7,11 +7,18 @@ export function shuffleArray(array) {
     }
 }
 
+function partnerPenalty(a, b) {
+  const key = [a.id, b.id].sort().join('-');
+  const count = partnershipHistory[key] || 0;
+  return count >= 2 ? 10000 : 0; // ใช้มาตรฐานโทษเดิม
+}
+
 export function createBalancedMatches(playerPool) {
     let courts = [];
     let pool = [...playerPool];
     
     const cPlayers = pool.filter(p => p.level === 'C');
+    shuffleArray(cPlayers);
     while (cPlayers.length > 4) {
         const courtPlayers = cPlayers.splice(0, 4);
         shuffleArray(courtPlayers);
@@ -47,6 +54,44 @@ export function createBalancedMatches(playerPool) {
         });
     }
 
+    for (let improved = true, guard = 0; improved && guard < 2; guard++) {
+        improved = false;
+
+        for (let i = 0; i < teams.length; i++) {
+            for (let j = i + 1; j < teams.length; j++) {
+            const [a1, a2] = teams[i].players; // a1 = high, a2 = low (จากขั้นสร้างทีมเดิม)
+            const [b1, b2] = teams[j].players; // b1 = high, b2 = low
+
+            const before = partnerPenalty(a1, a2) + partnerPenalty(b1, b2);
+
+            // ลองสลับ "ฝั่งอ่อน" ของสองทีม
+            const after  = partnerPenalty(a1, b2) + partnerPenalty(b1, a2);
+
+            // คุมความบาลานซ์ทีมให้เปลี่ยนได้น้อยมาก (ปรับ threshold ได้)
+            const score_i_after = skillScores[a1.level] + skillScores[b2.level];
+            const score_j_after = skillScores[b1.level] + skillScores[a2.level];
+            const okBalance =
+                Math.abs(score_i_after - teams[i].score) <= 1 &&
+                Math.abs(score_j_after - teams[j].score) <= 1;
+
+            if (after < before && okBalance) {
+                // ทำ swap แบบปลอดภัย
+                teams[i].players = [a1, b2];
+                teams[j].players = [b1, a2];
+
+                teams[i].score = score_i_after;
+                teams[j].score = score_j_after;
+
+                // อัปเดตโทษทีมไว้ใช้ต่อในขั้นเลือกทีมเจอกัน
+                teams[i].penalty = partnerPenalty(teams[i].players[0], teams[i].players[1]);
+                teams[j].penalty = partnerPenalty(teams[j].players[0], teams[j].players[1]);
+
+                improved = true;
+            }
+            }
+        }
+    }
+
     const possibleMatches = [];
     for (let i = 0; i < teams.length; i++) {
         for (let j = i + 1; j < teams.length; j++) {
@@ -57,7 +102,11 @@ export function createBalancedMatches(playerPool) {
             });
         }
     }
-    possibleMatches.sort((a, b) => a.score - b.score);
+
+    possibleMatches.sort((a, b) => {
+        const d = a.score - b.score;
+        return d !== 0 ? d : (Math.random() - 0.5);
+    });
 
     const usedTeamIndices = new Set();
     for (const match of possibleMatches) {
