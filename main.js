@@ -112,16 +112,6 @@ function reshuffleCurrentRound() {
         if (state.partnershipHistory[t2k]) state.partnershipHistory[t2k]--;
     });
 
-    state.players.forEach(p => {
-        const wasPlaying = state.currentMatch.courts.flatMap(c => [...c.team1, ...c.team2]).some(pl => pl && pl.id === p.id);
-        const wasResting = state.currentMatch.resting.some(pl => pl.id === p.id);
-        if (wasPlaying) {
-            p.consecutiveRests = state.history.length > 0 ? (state.history[state.history.length-1].resting.some(hp => hp.id === p.id) ? (p.consecutiveRests || 0) + 1 : 1) : 0;
-        } else if(wasResting) {
-            if (p.consecutiveRests > 0) p.consecutiveRests--;
-        }
-    });
-
     state.setRound(state.round - 1);
     generateNewRound(false);
 }
