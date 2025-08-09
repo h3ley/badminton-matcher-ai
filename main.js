@@ -68,7 +68,13 @@ function generateNewRound(IsNewRound = true) {
     const courts = createBalancedMatches(playingPool);
     
     const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
-
+    
+    state.setCurrentMatch({
+        round: state.round,
+        courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
+        resting: state.players.filter(p => !playingNowIds.has(p.id))
+    });
+    
     state.players.forEach(p => {
         if (playingNowIds.has(p.id)) {
             p.gamesPlayed++;
@@ -85,12 +91,7 @@ function generateNewRound(IsNewRound = true) {
         state.partnershipHistory[t2k] = (state.partnershipHistory[t2k] || 0) + 1;
     });
 
-    state.setCurrentMatch({
-        round: state.round,
-        courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
-        resting: state.players.filter(p => !playingNowIds.has(p.id))
-    });
-    
+
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
 }
