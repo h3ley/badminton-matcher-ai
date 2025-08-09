@@ -55,8 +55,8 @@ function generateNewRound(IsNewRound = true) {
     let availablePlayers = [...state.players];
     shuffleArray(availablePlayers);
     availablePlayers.sort((a, b) => {
-            // ให้ความสำคัญกับคนที่พัก 2 รอบก่อน (เรียงจากมากไปน้อย)
-            if (b.consecutiveRests >= 2 || a.consecutiveRests >= 2) {
+            // ให้ความสำคัญกับคนที่พักก่อน (เรียงจากมากไปน้อย)
+            if (a.consecutiveRests !== b.consecutiveRests) {
                 return b.consecutiveRests - a.consecutiveRests;
             }
             // ถ้าไม่เข้าเงื่อนไข ให้ใช้เกณฑ์จำนวนเกมที่เล่นน้อยที่สุดเหมือนเดิม
