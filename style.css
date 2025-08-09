@@ -21,3 +21,10 @@ body {
 .modal.is-open {
     display: flex; /* Show when open */
 }
+
+html, body {
+  touch-action: manipulation; /* กัน double-tap zoom */
+}
+a, button {
+  touch-action: manipulation; /* กัน double-tap zoom เฉพาะปุ่ม/ลิงก์ */
+}
