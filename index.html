@@ -26,6 +26,9 @@
         <!-- Header -->
         <header class="text-center my-4">
             <h1 class="text-2xl md:text-3xl font-bold text-slate-700">🏸 โปรแกรมจัดคู่ตีแบด</h1>
+            <span id="app-version" class="px-2 rounded-md bg-black/5 text-black/60 text-xs select-none">
+                loading...
+            </span>
             <p class="text-slate-500 mt-1 text-sm">สุ่มจัดสาย แบ่งทีม และนับจำนวนเกม</p>
         </header>
 
@@ -123,5 +126,14 @@
 
     <!-- เรียกใช้ไฟล์ JavaScript ภายนอก -->
     <script type="module" src="main.js"></script>
+    <script src="/version.js"></script>
+    <script>
+        (async () => {
+            const el = document.getElementById('app-version');
+            const ver = await getAppVersion();
+            // ถ้าคุณมี logic หาชื่อ branch จากโดเมนด้วยก็ใส่เพิ่มได้
+            el.textContent = `v${ver}`;
+        })();
+    </script>
 </body>
 </html>
