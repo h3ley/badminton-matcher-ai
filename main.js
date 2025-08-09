@@ -512,3 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.dom.courtCountInput.value = courtCount;
     ui.renderAll();
 });
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
