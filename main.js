@@ -510,6 +510,22 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.renderAll();
 });
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+
+    // เช็คอัปเดตทันทีที่โหลด และทุกครั้งที่กลับมาโฟกัส
+    reg.update();
+    ['focus','visibilitychange'].forEach(evt =>
+      window.addEventListener(evt, () => reg.update(), { passive: true })
+    );
+
+    // เมื่อ SW ใหม่ takeover แล้ว → รีโหลดอัตโนมัติหนึ่งครั้ง
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
+  });
 }

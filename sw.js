@@ -48,3 +48,34 @@ self.addEventListener('message', (event) => {
     event.source.postMessage({ type: 'VERSION', version: APP_VERSION });
   }
 });
+
+self.addEventListener('install', (e) => {
+  self.skipWaiting();                 // ให้ SW ใหม่พร้อม takeover ทันที
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(self.clients.claim());  // คุมทุกแท็บที่เปิดอยู่ทันที
+});
+
+// กลยุทธ์แคช:
+// - HTML: network-first (ได้ไฟล์ใหม่ก่อน ถ้าเน็ตล่มค่อยใช้แคช)
+// - อื่น ๆ (JS/CSS/img): stale-while-revalidate
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  const isHTML = req.headers.get('accept')?.includes('text/html');
+
+  if (isHTML) {
+    e.respondWith(fetch(req).catch(() => caches.match(req)));
+    return;
+  }
+
+  e.respondWith(
+    caches.match(req).then(cached => {
+      const fetching = fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open('static-v1').then(c => c.put(req, copy));
+        return res;
+      }).catch(() => cached);
+      return cached || fetching;
+    })
+  );
+});
