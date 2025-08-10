@@ -273,8 +273,14 @@ export function openPlayerModal(context, onSelect) {
     const isHistory = context.historyIndex !== null;
     const match = isHistory ? state.history[context.historyIndex] : state.currentMatch;
     
+    const teamKey = context.teamIndex === 0 ? 'team1' : 'team2';
+    const court = match.courts[context.courtIndex];
+    const me = court[teamKey][context.playerIndex] || null;
+    const partner = court[teamKey][context.playerIndex === 0 ? 1 : 0] || null;
+
     const playersInMatch = match.courts.flatMap(c => [...c.team1, ...c.team2]).filter(Boolean).map(p => p.id);
-    const availableForSwap = state.players.filter(p => !playersInMatch.includes(p.id));
+    const availableRestForSwap = state.players.filter(p => !playersInMatch.includes(p.id));
+    const availablePlayingForSwap = state.players.filter(p => playersInMatch.includes(p.id) && p.id !== me?.id && p.id !== partner?.id);
     
     const levelColors = {
         'C': 'bg-sky-500 text-white',
@@ -282,10 +288,16 @@ export function openPlayerModal(context, onSelect) {
         'A': 'bg-orange-500 text-white'
     };
 
-    if (availableForSwap.length === 0) {
-         dom.modalPlayerList.innerHTML = `<p class="text-slate-500 col-span-2 text-center text-sm">ไม่มีผู้เล่นที่พักให้สลับ</p>`;
+    
+    const restHeader = document.createElement('div');
+    restHeader.className = 'col-span-2 text-center font-semibold text-slate-600 text-sm';
+    restHeader.textContent = 'ผู้เล่นที่พัก';
+    dom.modalPlayerList.appendChild(restHeader);
+
+    if (availableRestForSwap.length === 0) {
+         dom.modalPlayerList.innerHTML = restHeader.outerHTML+`<p class="text-slate-500 col-span-2 text-center text-sm">ไม่มีผู้เล่นที่พักให้สลับ</p>`;
     } else {
-        availableForSwap.forEach(player => {
+        availableRestForSwap.forEach(player => {
             const playerBtn = document.createElement('button');
             playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm flex items-center gap-2';
             playerBtn.innerHTML = `
@@ -298,6 +310,29 @@ export function openPlayerModal(context, onSelect) {
             dom.modalPlayerList.appendChild(playerBtn);
         });
     }
+
+    
+    // === เพิ่มส่วนใหม่: แสดงผู้เล่นที่กำลังเล่นในรอบปัจจุบัน ===
+    if (availablePlayingForSwap.length > 0) {
+        // หัวข้อสำหรับผู้เล่นที่กำลังเล่น
+        const playingHeader = document.createElement('div');
+        playingHeader.className = 'col-span-2 text-center font-semibold text-slate-600 text-sm pt-2 border-t border-slate-200 mt-2';
+        playingHeader.textContent = 'ผู้เล่นรอบนี้';
+        dom.modalPlayerList.appendChild(playingHeader);
+
+        availablePlayingForSwap.forEach(player => {
+            const playerBtn = document.createElement('button');
+            playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-green-100 transition text-sm flex items-center gap-2 border border-green-200';
+            playerBtn.innerHTML = `
+                <span class="${levelColors[player.level]} font-bold w-5 h-5 flex items-center justify-center rounded-full text-xs">${player.level}</span>
+                <span class="flex-1">${player.name}</span>
+                <span class="text-xs bg-slate-200 text-slate-600 font-semibold px-2 py-0.5 rounded-full">${player.gamesPlayed} เกม</span>
+            `;
+            playerBtn.onclick = () => onSelect(player);
+            dom.modalPlayerList.appendChild(playerBtn);
+        });
+    }
+
     dom.playerModal.classList.add('is-open');
 }
 

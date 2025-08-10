@@ -204,38 +204,98 @@ function selectPlayerForSwap(newPlayer) {
         return;
     }
 
-    const oldPartner = matchToEdit.courts[courtIndex][teamKey][playerIndex === 0 ? 1 : 0];
-    if (oldPlayer && oldPartner) {
-    const oldKey = [oldPlayer.id, oldPartner.id].sort().join('-');
-    changePartnershipCount(oldKey, -1)
-}
-
-    const restingIndex = matchToEdit.resting.findIndex(p => p.id === newPlayer.id);
-
-    if (restingIndex !== -1) {
-        const playerFromRest = matchToEdit.resting[restingIndex];
-        
-        matchToEdit.courts[courtIndex][teamKey][playerIndex] = playerFromRest;
-        matchToEdit.resting.splice(restingIndex, 1, oldPlayer);
-
-        const pOld = state.players.find(p => p.id === oldPlayer.id);
-        const pNew = state.players.find(p => p.id === newPlayer.id);
-        if(pOld) {
-            pOld.gamesPlayed--;
-            pOld.consecutiveRests = countConsecutiveRests(pOld);
-        }
-        if(pNew) {
-            pNew.gamesPlayed++;
-            pNew.consecutiveRests = 0;
-        }
-    }
-
-    const newPartner = oldPartner; // พาร์ทเนอร์ยังคงเป็นคนเดิม
-    if (newPlayer && newPartner) {
-        const newKey = [newPlayer.id, newPartner.id].sort().join('-');
-        changePartnershipCount(newKey, +1)
-    }
+     // === เพิ่มส่วนใหม่: ตรวจสอบว่า newPlayer อยู่ในรายการผู้เล่นที่กำลังเล่นหรือไม่ ===
+    const playersInMatch = matchToEdit.courts.flatMap(c => [...c.team1, ...c.team2]).filter(Boolean);
+    const newPlayerInMatch = playersInMatch.find(p => p.id === newPlayer.id);
     
+    if (newPlayerInMatch) {
+        // กรณีสลับกับผู้เล่นที่กำลังเล่นอยู่ในคอร์ดอื่น
+        let targetCourtIndex = -1;
+        let targetTeamIndex = -1;
+        let targetPlayerIndex = -1;
+        
+        // หาตำแหน่งของผู้เล่นที่จะสลับ
+        for (let ci = 0; ci < matchToEdit.courts.length; ci++) {
+            for (let ti = 0; ti < 2; ti++) {
+                const team = ti === 0 ? matchToEdit.courts[ci].team1 : matchToEdit.courts[ci].team2;
+                for (let pi = 0; pi < team.length; pi++) {
+                    if (team[pi] && team[pi].id === newPlayer.id) {
+                        targetCourtIndex = ci;
+                        targetTeamIndex = ti;
+                        targetPlayerIndex = pi;
+                        break;
+                    }
+                }
+                if (targetCourtIndex !== -1) break;
+            }
+            if (targetCourtIndex !== -1) break;
+        }
+
+        if (targetCourtIndex !== -1) {
+            // อัพเดท partnership history สำหรับทั้งสองทีมที่จะได้รับผลกระทบ
+            const sourceTeam = teamIndex === 0 ? 'team1' : 'team2';
+            const targetTeam = targetTeamIndex === 0 ? 'team1' : 'team2';
+            
+            const sourcePartner = matchToEdit.courts[courtIndex][sourceTeam][playerIndex === 0 ? 1 : 0];
+            const targetPartner = matchToEdit.courts[targetCourtIndex][targetTeam][targetPlayerIndex === 0 ? 1 : 0];
+
+            // ลด count ของคู่เดิม
+            if (oldPlayer && sourcePartner) {
+                const oldKey = [oldPlayer.id, sourcePartner.id].sort().join('-');
+                changePartnershipCount(oldKey, -1);
+            }
+            if (newPlayer && targetPartner) {
+                const newKey = [newPlayer.id, targetPartner.id].sort().join('-');
+                changePartnershipCount(newKey, -1);
+            }
+
+            // สลับตำแหน่งผู้เล่น
+            matchToEdit.courts[courtIndex][sourceTeam][playerIndex] = newPlayer;
+            matchToEdit.courts[targetCourtIndex][targetTeam][targetPlayerIndex] = oldPlayer;
+
+            // เพิ่ม count ของคู่ใหม่
+            if (newPlayer && sourcePartner) {
+                const newKey1 = [newPlayer.id, sourcePartner.id].sort().join('-');
+                changePartnershipCount(newKey1, +1);
+            }
+            if (oldPlayer && targetPartner) {
+                const newKey2 = [oldPlayer.id, targetPartner.id].sort().join('-');
+                changePartnershipCount(newKey2, +1);
+            }
+        }
+    } else {
+        const oldPartner = matchToEdit.courts[courtIndex][teamKey][playerIndex === 0 ? 1 : 0];
+        if (oldPlayer && oldPartner) {
+            const oldKey = [oldPlayer.id, oldPartner.id].sort().join('-');
+            changePartnershipCount(oldKey, -1)
+        }
+
+        const restingIndex = matchToEdit.resting.findIndex(p => p.id === newPlayer.id);
+
+        if (restingIndex !== -1) {
+            const playerFromRest = matchToEdit.resting[restingIndex];
+            
+            matchToEdit.courts[courtIndex][teamKey][playerIndex] = playerFromRest;
+            matchToEdit.resting.splice(restingIndex, 1, oldPlayer);
+
+            const pOld = state.players.find(p => p.id === oldPlayer.id);
+            const pNew = state.players.find(p => p.id === newPlayer.id);
+            if(pOld) {
+                pOld.gamesPlayed--;
+                pOld.consecutiveRests = countConsecutiveRests(pOld);
+            }
+            if(pNew) {
+                pNew.gamesPlayed++;
+                pNew.consecutiveRests = 0;
+            }
+        }
+
+        const newPartner = oldPartner; // พาร์ทเนอร์ยังคงเป็นคนเดิม
+        if (newPlayer && newPartner) {
+            const newKey = [newPlayer.id, newPartner.id].sort().join('-');
+            changePartnershipCount(newKey, +1)
+        }
+    }
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
     ui.closePlayerModal();
