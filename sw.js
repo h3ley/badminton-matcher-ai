@@ -16,66 +16,88 @@ const ASSETS = [
   "/version.js",
 ];
 
+// ติดตั้ง SW ใหม่
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
-    APP_VERSION = await getAppVersion();          // ← ใช้ฟังก์ชันกลาง
+    APP_VERSION = await getAppVersion();
     CACHE_NAME = `mm-cache-${APP_VERSION}`;
 
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(ASSETS);
 
+    // บังคับให้ SW ใหม่เข้ามาทำงานทันที
     self.skipWaiting();
   })());
 });
 
+// เปิดใช้งาน SW ใหม่
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    const names = await caches.keys();
-    await Promise.all(names.map(n => n !== CACHE_NAME ? caches.delete(n) : null));
+    // ลบ cache เก่าทั้งหมด
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter(name => name !== CACHE_NAME)
+        .map(name => caches.delete(name))
+    );
+    
+    // บังคับให้ SW ควบคุมทุก client ทันที
     await self.clients.claim();
   })());
 });
 
+// จัดการ fetch request
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then(r => r || fetch(event.request))
-  );
+  const req = event.request;
+  const isHTML = req.headers.get('accept')?.includes('text/html');
+
+  if (isHTML) {
+    // HTML: network-first (ดึงใหม่ก่อน ถ้าไม่ได้ใช้ cache)
+    event.respondWith(
+      fetch(req)
+        .then(response => {
+          // เก็บ HTML ใหม่ในแคช
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(req, responseClone);
+          });
+          return response;
+        })
+        .catch(() => caches.match(req))
+    );
+  } else {
+    // ไฟล์อื่น: cache-first แต่อัพเดทในพื้นหลัง
+    event.respondWith(
+      caches.match(req).then(cached => {
+        const fetchPromise = fetch(req)
+          .then(response => {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(req, responseClone);
+            });
+            return response;
+          })
+          .catch(() => cached);
+        
+        return cached || fetchPromise;
+      })
+    );
+  }
 });
 
-// เผื่อหน้าเว็บอยากถามเวอร์ชันจาก SW
+// รับ message จาก main thread
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'GET_VERSION') {
     event.source.postMessage({ type: 'VERSION', version: APP_VERSION });
   }
-});
-
-self.addEventListener('install', (e) => {
-  self.skipWaiting();                 // ให้ SW ใหม่พร้อม takeover ทันที
-});
-self.addEventListener('activate', (e) => {
-  e.waitUntil(self.clients.claim());  // คุมทุกแท็บที่เปิดอยู่ทันที
-});
-
-// กลยุทธ์แคช:
-// - HTML: network-first (ได้ไฟล์ใหม่ก่อน ถ้าเน็ตล่มค่อยใช้แคช)
-// - อื่น ๆ (JS/CSS/img): stale-while-revalidate
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
-  const isHTML = req.headers.get('accept')?.includes('text/html');
-
-  if (isHTML) {
-    e.respondWith(fetch(req).catch(() => caches.match(req)));
-    return;
+  
+  // รองรับการบังคับ update
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
-
-  e.respondWith(
-    caches.match(req).then(cached => {
-      const fetching = fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open('static-v1').then(c => c.put(req, copy));
-        return res;
-      }).catch(() => cached);
-      return cached || fetching;
-    })
-  );
+  
+  // เพิ่ม: ตอบ PING เพื่อให้ main.js รู้ว่า SW ใหม่รองรับ message
+  if (event.data?.type === 'PING') {
+    event.source.postMessage({ type: 'PONG' });
+  }
 });

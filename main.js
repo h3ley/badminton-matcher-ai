@@ -570,22 +570,93 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.renderAll();
 });
 
+async function forceUpdate() {
+  try {
+    // 1. ลบ cache ทั้งหมด (สำหรับ SW เก่าที่ไม่มี auto-clear)
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+    
+    // 2. Unregister SW เก่า
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(reg => reg.unregister()));
+    
+    // 3. รีโหลดหน้าเว็บ
+    window.location.reload(true);
+  } catch (error) {
+    console.error('Force update failed:', error);
+    // fallback: hard reload
+    window.location.reload(true);
+  }
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-    const reg = await navigator.serviceWorker.register('/sw.js');
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      
+      // ตรวจสอบว่า SW เก่ายังไม่มี auto-update logic หรือไม่
+      const hasController = !!navigator.serviceWorker.controller;
+      if (hasController) {
+        // ทดสอบว่า SW ปัจจุบันรองรับ message หรือไม่
+        let swRespondsToMessage = false;
+        try {
+          navigator.serviceWorker.controller.postMessage({ type: 'PING' });
+          // รอ response 1 วินาที
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(), 1000);
+            navigator.serviceWorker.addEventListener('message', function handler(event) {
+              if (event.data?.type === 'PONG') {
+                swRespondsToMessage = true;
+                clearTimeout(timeout);
+                navigator.serviceWorker.removeEventListener('message', handler);
+                resolve();
+              }
+            });
+          });
+        } catch {
+          // SW เก่าไม่ตอบ - ต้อง force update
+          console.log('🔄 ตรวจพบ SW เวอร์ชันเก่า กำลังอัพเดท...');
+          await forceUpdate();
+          return;
+        }
+      }
+      
+      // --- ส่วนนี้สำหรับ SW ใหม่ (auto-update) ---
+      
+      // เช็คอัพเดททุกครั้งที่โหลดหน้า
+      registration.update();
+      
+      // เช็คอัพเดทเมื่อกลับมาโฟกัส
+      window.addEventListener('focus', () => registration.update());
+      window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) registration.update();
+      });
 
-    // เช็คอัปเดตทันทีที่โหลด และทุกครั้งที่กลับมาโฟกัส
-    reg.update();
-    ['focus','visibilitychange'].forEach(evt =>
-      window.addEventListener(evt, () => reg.update(), { passive: true })
-    );
+      // จัดการเมื่อมี SW ใหม่พร้อมใช้งาน - อัพเดทอัตโนมัติ
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed') {
+            console.log('🔄 อัพเดทใหม่พร้อมใช้งาน กำลังรีโหลด...');
+            // บังคับให้ SW ใหม่เข้ามาทำงานทันที
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
 
-    // เมื่อ SW ใหม่ takeover แล้ว → รีโหลดอัตโนมัติหนึ่งครั้ง
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      location.reload();
-    });
+      // รีโหลดหน้าเมื่อ SW ใหม่เข้ามาควบคุม
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        console.log('🔄 รีโหลดหน้าเว็บ...');
+        window.location.reload();
+      });
+
+      console.log('✅ Service Worker ลงทะเบียนสำเร็จ');
+    } catch (error) {
+      console.error('❌ Service Worker ลงทะเบียนไม่สำเร็จ:', error);
+    }
   });
 }
