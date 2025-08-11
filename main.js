@@ -565,6 +565,20 @@ ui.dom.historyContainer.addEventListener('click', (e) => {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
+
+    const tl = document.getElementById('toggle-levels');
+    if (!tl) return;
+
+    const saved = localStorage.getItem('hideLevels') === '1';
+    tl.checked = saved;
+    document.body.classList.toggle('hide-levels', saved);
+
+    tl.addEventListener('change', (e) => {
+        const on = e.target.checked;
+        document.body.classList.toggle('hide-levels', on);
+        localStorage.setItem('hideLevels', on ? '1' : '0');
+    });
+
     const courtCount = state.loadState();
     ui.dom.courtCountInput.value = courtCount;
     ui.renderAll();

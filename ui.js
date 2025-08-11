@@ -196,7 +196,7 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
              data-player-index="${playerIndex}"
              data-player-id="${player.id}">
              <span class="level-indicator ${levelColors[player.level]} font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
-            <span class="font-medium flex-1 text-left">${player.name}</span>
+            <span class="font-medium flex-1 text-center">${player.name}</span>
         </div>
     `;
 }
@@ -301,7 +301,7 @@ export function openPlayerModal(context, onSelect) {
             const playerBtn = document.createElement('button');
             playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm flex items-center gap-2';
             playerBtn.innerHTML = `
-                <span class="${levelColors[player.level]} font-bold w-5 h-5 flex items-center justify-center rounded-full text-xs">${player.level}</span>
+                <span class="${levelColors[player.level]} level-indicator font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
                 <span class="flex-1">${player.name}</span>
                 <span class="text-xs bg-slate-200 text-slate-600 font-semibold px-2 py-0.5 rounded-full">${player.gamesPlayed} เกม</span>
                 ${player.consecutiveRests > 1 ? `<span class="bg-amber-200 text-amber-800 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full">${player.consecutiveRests}</span>` : ''}
@@ -324,7 +324,7 @@ export function openPlayerModal(context, onSelect) {
             const playerBtn = document.createElement('button');
             playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-green-100 transition text-sm flex items-center gap-2 border border-green-200';
             playerBtn.innerHTML = `
-                <span class="${levelColors[player.level]} font-bold w-5 h-5 flex items-center justify-center rounded-full text-xs">${player.level}</span>
+                <span class="${levelColors[player.level]} level-indicator font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
                 <span class="flex-1">${player.name}</span>
                 <span class="text-xs bg-slate-200 text-slate-600 font-semibold px-2 py-0.5 rounded-full">${player.gamesPlayed} เกม</span>
             `;
