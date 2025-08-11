@@ -91,8 +91,13 @@ self.addEventListener('message', (event) => {
     event.source.postMessage({ type: 'VERSION', version: APP_VERSION });
   }
   
-  // เพิ่ม: รองรับการบังคับ update
+  // รองรับการบังคับ update
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  
+  // เพิ่ม: ตอบ PING เพื่อให้ main.js รู้ว่า SW ใหม่รองรับ message
+  if (event.data?.type === 'PING') {
+    event.source.postMessage({ type: 'PONG' });
   }
 });
