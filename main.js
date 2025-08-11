@@ -572,20 +572,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-    const reg = await navigator.serviceWorker.register('/sw.js');
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      
+      // เช็คอัปเดททุกครั้งที่โหลดหน้า
+      registration.update();
+      
+      // เช็คอัปเดทเมื่อกลับมาโฟกัส
+      window.addEventListener('focus', () => registration.update());
+      window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) registration.update();
+      });
 
-    // เช็คอัปเดตทันทีที่โหลด และทุกครั้งที่กลับมาโฟกัส
-    reg.update();
-    ['focus','visibilitychange'].forEach(evt =>
-      window.addEventListener(evt, () => reg.update(), { passive: true })
-    );
+      // จัดการเมื่อมี SW ใหม่พร้อมใช้งาน
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // แสดงข้อความแจ้งเตือนหรือรีโหลดอัตโนมัติ
+            console.log('🔄 อัพเดทใหม่พร้อมใช้งาน กำลังรีโหลด...');
+            
+            // ส่ง message ให้ SW ใหม่เข้ามาทำงาน
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
 
-    // เมื่อ SW ใหม่ takeover แล้ว → รีโหลดอัตโนมัติหนึ่งครั้ง
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      location.reload();
-    });
+      // รีโหลดหน้าเมื่อ SW ใหม่เข้ามาควบคุม
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        console.log('🔄 รีโหลดหน้าเว็บ...');
+        window.location.reload();
+      });
+
+      console.log('✅ Service Worker ลงทะเบียนสำเร็จ');
+    } catch (error) {
+      console.error('❌ Service Worker ลงทะเบียนไม่สำเร็จ:', error);
+    }
   });
 }
