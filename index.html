@@ -56,10 +56,13 @@
 
         <!-- Player Overview Section -->
         <section class="bg-white p-4 rounded-2xl shadow-sm mb-6">
-            <div class="flex justify-center items-center mb-3">
+            <div class="flex flex-wrap justify-center items-center mb-3">
                 <h3 class="text-lg font-semibold text-slate-700 text-center">ผู้เล่นทั้งหมด (<span id="player-total-count">0</span>)</h3>
                 <button id="toggle-stats-btn" class="ml-4 text-xs text-sky-600 hover:underline">ดูสถิติคู่</button>
-            </div>
+                <label class="w-full items-center text-slate-500 mt-1 text-xs text-center">
+                    <input id="toggle-levels" type="checkbox" class="accent-gray-600">ซ่อนระดับผู้เล่น
+                </label>  
+            </div>          
             <div id="player-list-container" class="flex flex-wrap justify-center items-center gap-2 min-h-[3rem]"></div>
             <div id="stats-container" class="hidden mt-4 pt-4 border-t border-slate-200 ">
                 <h4 class="text-sm font-semibold text-center mb-2">สถิติการจับคู่ (Partner)</h4>

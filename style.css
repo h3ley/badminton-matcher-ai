@@ -28,3 +28,9 @@ html, body {
 a, button {
   touch-action: manipulation; /* กัน double-tap zoom เฉพาะปุ่ม/ลิงก์ */
 }
+
+/* ซ่อนทุกอย่างเกี่ยวกับระดับเมื่อเปิดโหมดซ่อน */
+body.hide-levels .level-indicator,
+body.hide-levels .level-btn {
+  display: none !important;
+}
