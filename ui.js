@@ -82,8 +82,8 @@ export function renderMatches() {
     // --- สิ้นสุดส่วนที่เพิ่ม ---
 
     return`
-        <div class="flex items-center justify-around text-center text-sm py-2 ${state.currentMatch.courts.length > 1 && courtIndex < state.currentMatch.courts.length - 1 ? 'border-b border-sky-200' : ''}">
-            <div class="font-semibold text-sky-700 w-20 flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-around text-center text-sm py-2 ${state.currentMatch.courts.length > 1 && courtIndex < state.currentMatch.courts.length - 1 ? 'border-b border-sky-200' : ''}">
+            <div class="font-semibold text-sky-700 w-20  basis-full w-full flex items-center gap-2 sm:basis-auto sm:w-20 sm:justify-start">
                 <span>คอร์ด ${court.courtNum}</span>
                 <button class="reshuffle-court-btn text-sky-500 hover:text-sky-700" data-court-index="${courtIndex}" title="สุ่มคอร์ดนี้ใหม่">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>
@@ -220,12 +220,12 @@ export function renderPlayerList() {
 
     sortedPlayers.forEach(player => {
         const playerTag = document.createElement('div');
-        playerTag.className = 'player-tag bg-slate-100 inline-flex items-center gap-2 py-1 pl-2.5 pr-1 rounded-full border border-slate-200';
+        playerTag.className = 'player-tag bg-slate-100 inline-flex items-center gap-1 py-1 pl-2.5 pr-1 rounded-full border border-slate-200';
         
         playerTag.innerHTML = `
             <button data-player-id="${player.id}" class="level-btn ${levelColors[player.level]} text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full cursor-pointer transition-colors">${player.level}</button>
             <span class="font-medium text-sm">${player.name}</span>
-            <span class="text-xs bg-slate-200 text-slate-600 font-semibold w-10 text-center py-0.5 rounded-full">${player.gamesPlayed}</span>
+            <span class="text-xs bg-slate-200 text-slate-600 font-semibold text-center px-2 py-0.5 rounded-full">${player.gamesPlayed}</span>
             <button data-player-id="${player.id}" data-player-name="${player.name}" class="remove-player-btn text-slate-400 hover:text-red-500 font-bold text-base leading-none w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition-colors">&times;</button>
         `;
         dom.playerListContainer.appendChild(playerTag);
