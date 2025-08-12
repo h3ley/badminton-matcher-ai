@@ -495,6 +495,18 @@ ui.dom.playerListContainer.addEventListener('click', (e) => {
 });
 
 ui.dom.currentRoundContainer.addEventListener('click', (e) => {
+    // จับคลิกที่ badge W/L ของ current match
+  const badge = e.target.closest('.badge-w-l');
+  if (badge) {
+    const courtIndex = parseInt(badge.dataset.courtIndex, 10);
+    const team = badge.dataset.team; // 'team1' | 'team2'
+    const cur = state.currentMatch.courts[courtIndex].result;
+    state.currentMatch.courts[courtIndex].result = cur === team ? undefined : team;
+    state.saveState(ui.dom.courtCountInput.value);
+    ui.renderMatches();
+    return;
+  }
+    // จัดการการคลิกที่ปุ่ม reshuffle ของคอร์ด
     const reshuffleCourtBtn = e.target.closest('.reshuffle-court-btn');
     if (reshuffleCourtBtn) {
         reshuffleSingleCourt(parseInt(reshuffleCourtBtn.dataset.courtIndex, 10));
