@@ -96,11 +96,11 @@ export function renderMatches() {
                 ${createPlayerHTML(court.team1[1], null, courtIndex, 0, 1, { isRepeat: isTeam1Repeat })}
                 ${team1Warning}
             </div>
-            <span class="flex items-center gap-2 text-slate-300 font-bold text-sm w-70">
+            <span class="flex items-center gap-2 text-slate-400 font-bold text-sm w-auto">
                 <button class="badge-w-l w-4 h-5 rounded-sm border text-[10px] font-bold flex items-center justify-center
                     ${res === 'team1' ? 'bg-green-100 text-green-600 border-green-600' :
                     res === 'team2' ? 'bg-red-100 text-red-600 border-red-600' :
-                    'bg-slate-100 text-slate-500 border-slate-200'}"
+                    'bg-slate-100 text-slate-300 border-slate-200'}"
                     data-history-index=""
                     data-court-index="${courtIndex}"
                     data-team="team1">
@@ -110,7 +110,7 @@ export function renderMatches() {
                 <button class="badge-w-l w-4 h-5 rounded-sm border text-[10px] font-bold flex items-center justify-center
                     ${res === 'team2' ? 'bg-green-100 text-green-600 border-green-600' :
                     res === 'team1' ? 'bg-red-100 text-red-600 border-red-600' :
-                    'bg-slate-100 text-slate-500 border-slate-200'}"
+                    'bg-slate-100 text-slate-300 border-slate-200'}"
                     data-history-index=""
                     data-court-index="${courtIndex}"
                     data-team="team2">
@@ -161,11 +161,11 @@ export function renderHistory() {
                     ${createPlayerHTML(court.team1[0], historyIndex, courtIndex, 0, 0)}
                     ${createPlayerHTML(court.team1[1], historyIndex, courtIndex, 0, 1)}
                 </div>
-                <span class="flex items-center gap-2 text-slate-300 font-bold text-sm w-70">
+                <span class="flex items-center gap-2 text-slate-400 font-bold text-sm w-70">
                     <button class="badge-w-l w-4 h-5 rounded-sm border text-[10px] font-bold flex items-center justify-center
                         ${court.result === 'team1' ? 'bg-green-100 text-green-600 border-green-600' :
                         court.result === 'team2' ? 'bg-red-100 text-red-600 border-red-600' :
-                        'bg-slate-100 text-slate-500 border-slate-200'}"
+                        'bg-slate-100 text-slate-300 border-slate-200'}"
                         data-history-index="${historyIndex}" 
                         data-court-index="${courtIndex}" 
                         data-team="team1">
@@ -175,7 +175,7 @@ export function renderHistory() {
                     <button class="badge-w-l w-4 h-5 rounded-sm border text-[10px] font-bold flex items-center justify-center
                         ${court.result === 'team2' ? 'bg-green-100 text-green-600 border-green-600' :
                         court.result === 'team1' ? 'bg-red-100 text-red-600 border-red-600' :
-                        'bg-slate-100 text-slate-500 border-slate-200'}"
+                        'bg-slate-100 text-slate-300 border-slate-200'}"
                         data-history-index="${historyIndex}" 
                         data-court-index="${courtIndex}" 
                         data-team="team2">
