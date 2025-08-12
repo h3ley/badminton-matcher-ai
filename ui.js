@@ -82,20 +82,20 @@ export function renderMatches() {
     // --- สิ้นสุดส่วนที่เพิ่ม ---
 
     return`
-        <div class="flex flex-wrap items-center justify-around text-center text-sm py-2 ${state.currentMatch.courts.length > 1 && courtIndex < state.currentMatch.courts.length - 1 ? 'border-b border-sky-200' : ''}">
+        <div class="flex flex-wrap items-center justify-around text-center text-sm py-3 ${state.currentMatch.courts.length > 1 && courtIndex < state.currentMatch.courts.length - 1 ? 'border-b border-sky-200 pb-4' : 'pt-4'}">
             <div class="font-semibold text-sky-700 w-20  basis-full w-full flex items-center gap-2 sm:basis-auto sm:w-20 sm:justify-start">
                 <span>คอร์ด ${court.courtNum}</span>
                 <button class="reshuffle-court-btn text-sky-500 hover:text-sky-700" data-court-index="${courtIndex}" title="สุ่มคอร์ดนี้ใหม่">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>
                 </button>
             </div>
-            <div class="team flex gap-1.5 w-32 justify-center items-center rounded-md p-1 relative ${isTeam1Repeat ? teamWarning : ''}">
+            <div class="team flex flex-wrap gap-1.5 w-24 justify-center items-center rounded-md p-1 relative ${isTeam1Repeat ? teamWarning : ''}">
                 ${createPlayerHTML(court.team1[0], null, courtIndex, 0, 0, { isRepeat: isTeam1Repeat })}
                 ${createPlayerHTML(court.team1[1], null, courtIndex, 0, 1, { isRepeat: isTeam1Repeat })}
                 ${team1Warning}
             </div>
             <span class="text-slate-400 font-bold text-base">VS</span>
-            <div class="team flex gap-1.5 w-32 justify-center items-center rounded-md p-1 relative ${isTeam2Repeat ? teamWarning : ''}">
+            <div class="team flex flex-wrap gap-1.5 w-24 justify-center items-center rounded-md p-1 relative ${isTeam2Repeat ? teamWarning : ''}">
                 ${createPlayerHTML(court.team2[0], null, courtIndex, 1, 0, { isRepeat: isTeam2Repeat })}
                 ${createPlayerHTML(court.team2[1], null, courtIndex, 1, 1, { isRepeat: isTeam2Repeat })}
                 ${team2Warning}
@@ -131,14 +131,36 @@ export function renderHistory() {
         historyCard.className = 'history-card bg-white p-4 rounded-2xl shadow-sm border relative';
         
         let courtsHTML = match.courts.map((court, courtIndex) => `
-            <div class="flex items-center justify-around text-center text-xs py-1.5 ${match.courts.length > 1 && courtIndex < match.courts.length - 1 ? 'border-b' : ''}">
-                <div class="font-semibold text-slate-500 w-14">คอร์ด ${court.courtNum}</div>
-                <div class="team flex gap-1.5 w-32 justify-center">
+            <div class="flex flex-wrap items-center justify-around text-center text-xs py-1.5 ${match.courts.length > 1 && courtIndex < match.courts.length - 1 ? 'border-b pb-3' : 'pt-3'}">
+                <div class="font-semibold text-slate-500 w-14  w-20  basis-full w-full flex items-center gap-2 sm:basis-auto sm:w-20 sm:justify-start">
+                    <span>คอร์ด ${court.courtNum}</span>
+                </div>
+                <div class="team flex flex-wrap gap-1.5 w-20 justify-center">
                     ${createPlayerHTML(court.team1[0], historyIndex, courtIndex, 0, 0)}
                     ${createPlayerHTML(court.team1[1], historyIndex, courtIndex, 0, 1)}
                 </div>
-                <span class="text-slate-300 font-bold text-sm">VS</span>
-                <div class="team flex gap-1.5 w-32 justify-center">
+                <span class="flex items-center gap-2 text-slate-300 font-bold text-sm w-70">
+                    <button class="badge-w-l w-4 h-5 rounded-sm border text-[10px] font-bold flex items-center justify-center
+                        ${court.result === 'team1' ? 'bg-green-100 text-green-600 border-green-600' :
+                        court.result === 'team2' ? 'bg-red-100 text-red-600 border-red-600' :
+                        'bg-slate-200 text-slate-700 border-slate-300'}"
+                        data-history-index="${historyIndex}" 
+                        data-court-index="${courtIndex}" 
+                        data-team="team1">
+                        ${court.result === 'team1' ? 'W' : court.result === 'team2' ? 'L' : '-'}
+                    </button>
+                    VS
+                    <button class="badge-w-l w-4 h-5 rounded-sm border text-[10px] font-bold flex items-center justify-center
+                        ${court.result === 'team2' ? 'bg-green-100 text-green-600 border-green-600' :
+                        court.result === 'team1' ? 'bg-red-100 text-red-600 border-red-600' :
+                        'bg-slate-200 text-slate-700 border-slate-300'}"
+                        data-history-index="${historyIndex}" 
+                        data-court-index="${courtIndex}" 
+                        data-team="team2">
+                        ${court.result === 'team2' ? 'W' : court.result === 'team1' ? 'L' : '-'}
+                    </button>
+                </span>
+                <div class="team flex flex-wrap gap-1.5 w-20 justify-center">
                     ${createPlayerHTML(court.team2[0], historyIndex, courtIndex, 1, 0)}
                     ${createPlayerHTML(court.team2[1], historyIndex, courtIndex, 1, 1)}
                 </div>
