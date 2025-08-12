@@ -495,6 +495,18 @@ ui.dom.playerListContainer.addEventListener('click', (e) => {
 });
 
 ui.dom.currentRoundContainer.addEventListener('click', (e) => {
+    // จับคลิกที่ badge W/L ของ current match
+  const badge = e.target.closest('.badge-w-l');
+  if (badge) {
+    const courtIndex = parseInt(badge.dataset.courtIndex, 10);
+    const team = badge.dataset.team; // 'team1' | 'team2'
+    const cur = state.currentMatch.courts[courtIndex].result;
+    state.currentMatch.courts[courtIndex].result = cur === team ? undefined : team;
+    state.saveState(ui.dom.courtCountInput.value);
+    ui.renderMatches();
+    return;
+  }
+    // จัดการการคลิกที่ปุ่ม reshuffle ของคอร์ด
     const reshuffleCourtBtn = e.target.closest('.reshuffle-court-btn');
     if (reshuffleCourtBtn) {
         reshuffleSingleCourt(parseInt(reshuffleCourtBtn.dataset.courtIndex, 10));
@@ -563,6 +575,39 @@ ui.dom.historyContainer.addEventListener('click', (e) => {
     }
 });
 
+ui.dom.historyContainer.addEventListener('click', (e) => {
+    const badge = e.target.closest('.badge-w-l');
+    if (badge) {
+        const historyIndex = parseInt(badge.dataset.historyIndex, 10);
+        const courtIndex = parseInt(badge.dataset.courtIndex, 10);
+        const team = badge.dataset.team;
+        
+        const match = state.history[historyIndex];
+        if (!match.courts[courtIndex].result || match.courts[courtIndex].result !== team) {
+            match.courts[courtIndex].result = team; // ตั้งผู้ชนะ
+        } else {
+            delete match.courts[courtIndex].result; // กดซ้ำเพื่อล้างผล
+        }
+        
+        state.saveState(ui.dom.courtCountInput.value);
+        ui.renderHistory();
+        return;
+    }
+
+    // โค้ดเดิมของการ swap player
+    const slot = e.target.closest('.player-slot');
+    if (slot) {
+        editingContext = {
+            historyIndex: parseInt(slot.dataset.historyIndex, 10),
+            courtIndex: parseInt(slot.dataset.courtIndex, 10),
+            teamIndex: parseInt(slot.dataset.teamIndex, 10),
+            playerIndex: parseInt(slot.dataset.playerIndex, 10)
+        };
+        ui.openPlayerModal(editingContext, selectPlayerForSwap);
+    }
+});
+
+
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -583,6 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.dom.courtCountInput.value = courtCount;
     ui.renderAll();
 });
+
 
 async function forceUpdate() {
   try {
