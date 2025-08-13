@@ -25,8 +25,6 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(ASSETS);
 
-    // บังคับให้ SW ใหม่เข้ามาทำงานทันที
-    self.skipWaiting();
   })());
 });
 
