@@ -7,6 +7,9 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Service-Worker-Allowed: /
 
+/version.txt
+Cache-Control: no-cache, no-store, must-revalidate
+
 # Header สำหรับไฟล์อื่นๆ ให้แคชไปนานๆ ได้เลย
 /src/*
   Cache-Control: public, max-age=31536000, immutable
