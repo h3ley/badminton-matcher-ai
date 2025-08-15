@@ -616,27 +616,9 @@ async function doExport() {
     const courtCount = parseInt(ui.dom.courtCountInput.value, 10) || 2;
     const payload = state.getExportPayload(courtCount);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const filename = `badminton-matcher-export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    const filename = `bm-export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
 
-    // ถ้าเบราว์เซอร์รองรับ File System Access API (Chrome, Edge บนเดสก์ท็อป)
-    if (window.showSaveFilePicker) {
-        try {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: filename,
-                types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-            alert('บันทึกไฟล์ Export สำเร็จ');
-            return;
-        } catch (e) {
-            if (e.name !== 'AbortError') console.error(e);
-            // ถ้ายกเลิกก็ไป fallback ต่อ
-        }
-    }
-
-    // Fallback: สร้างลิงก์ดาวน์โหลด
+    // ใช้ fallback เสมอ
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = filename;
@@ -678,10 +660,11 @@ async function doImport() {
                 types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
             });
             const file = await handle.getFile();
-            return doImportFromFile(file);
+            await doImportFromFile(file);
+            return;
         } catch (e) {
-            if (e.name !== 'AbortError') console.error(e);
-            // ถ้ายกเลิกก็ไป fallback ต่อ
+            if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError' || e.code === 20)) return;
+            console.error(e);
         }
     }
     // Fallback: คลิก input[type=file]
