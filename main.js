@@ -661,6 +661,9 @@ if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.register('/sw.js');
       console.log('✅ Service Worker Registered');
 
+      // ขอให้ตรวจอัปเดตทุกครั้งที่เปิดหน้า
+      registration.update();
+
       // UI สำหรับปุ่มอัปเดต
       const updateButton = document.getElementById('update-btn');
       const updateNotification = document.getElementById('update-notification');
@@ -682,9 +685,13 @@ if ('serviceWorker' in navigator) {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
              console.log('New Service Worker installed, ready to activate.');
              askToUpdate(newWorker);
+             newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
+    if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
 
     } catch (error) {
       console.error('Service Worker registration failed:', error);

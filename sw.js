@@ -12,7 +12,6 @@ const ASSETS = [
   "/ui.js",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/version.txt",
   "/version.js",
 ];
 
@@ -24,7 +23,7 @@ self.addEventListener('install', (event) => {
 
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(ASSETS);
-
+    self.skipWaiting();
   })());
 });
 
@@ -47,22 +46,26 @@ self.addEventListener('activate', (event) => {
 // จัดการ fetch request
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  const url = new URL(req.url);
+  if (url.pathname === '/sw.js') return; // ปล่อยไฟล์ SW ให้โหลดสดเสมอ
+
+  const accept = req.headers.get('accept') || '';
   const isHTML = req.headers.get('accept')?.includes('text/html');
 
-  if (isHTML) {
-    // HTML: network-first (ดึงใหม่ก่อน ถ้าไม่ได้ใช้ cache)
-    event.respondWith(
-      fetch(req)
-        .then(response => {
-          // เก็บ HTML ใหม่ในแคช
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(req, responseClone);
-          });
-          return response;
-        })
-        .catch(() => caches.match(req))
-    );
+  // HTML และ version.txt = network-first เพื่อเห็น deploy ใหม่ก่อน
+   if (isHTML || url.pathname === '/version.txt') {
+     event.respondWith((async () => {
+       try {
+         const fresh = await fetch(req, { cache: 'no-store' });
+         const cache = await caches.open(CACHE_NAME);
+         cache.put(req, fresh.clone());
+         return fresh;
+       } catch {
+         const cached = await caches.match(req);
+         return cached || caches.match('/index.html');
+       }
+     })());
+     return;
   } else {
     // ไฟล์อื่น: cache-first แต่อัพเดทในพื้นหลัง
     event.respondWith(
