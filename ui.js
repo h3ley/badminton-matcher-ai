@@ -58,6 +58,21 @@ export const dom = {
     wlTbody: document.getElementById('wl-tbody'),
     };
 
+export function refreshVisibility() {
+    const hasCurrent =
+        (state.currentMatch?.courts?.length ?? 0) > 0 ||
+        (state.currentMatch?.resting?.length ?? 0) > 0;
+
+    const hasHistory = (state.history?.length ?? 0) > 0;
+
+    if (dom.currentMatchSection) {
+        dom.currentMatchSection.classList.toggle('hidden', !hasCurrent);
+    }
+    if (dom.historySection) {
+        dom.historySection.classList.toggle('hidden', !hasHistory);
+    }
+}
+
 // --- Rendering Functions ---
 export function renderAll() {
     renderPlayerList();
@@ -67,6 +82,7 @@ export function renderAll() {
         renderPartnershipStats();
         renderWinLossStats();
     }
+    
 }
 
 export function renderMatches() {
@@ -78,6 +94,8 @@ export function renderMatches() {
         dom.resultsSection.style.display = 'none';
         return;
     }
+
+    dom.resultsSection.style.display = 'block';
     
     dom.restingPlayersContainer.className = 'mt-6 bg-sky-50 p-4 rounded-2xl shadow-sm transition-colors duration-300 border border-sky-200';
     dom.restingPlayersContainer.querySelector('h3').className = 'text-lg font-semibold text-sky-800 mb-3';
@@ -242,6 +260,12 @@ export function renderHistory() {
         `;
         dom.historyContainer.appendChild(historyCard);
     });
+    // ซ่อน/แสดงตามมีข้อมูล
+    if ((state.history?.length ?? 0) > 0) {
+        dom.historySection.style.display = 'block';
+    } else {
+        dom.historySection.style.display = 'none';
+    }
 }
 
 export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, playerIndex, options = {}) {

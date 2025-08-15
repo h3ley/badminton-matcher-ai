@@ -311,19 +311,12 @@ function resetApp() {
     });
     state.setPartnershipHistory({});
     
-    ui.dom.resultsSection.style.display = 'none';
-    ui.dom.historySection.style.display = 'none';
     ui.dom.messageArea.textContent = '';
 
     ui.dom.restingPlayersContainer.className = 'mt-6 bg-white p-4 rounded-2xl shadow-sm transition-colors duration-300';
     ui.dom.restingPlayersContainer.querySelector('h3').className = 'text-lg font-semibold text-slate-600 mb-3';
-    
-    if (!ui.dom.statsContainer.classList.contains('hidden')) {
-        ui.dom.statsContainer.classList.add('hidden');
-        ui.dom.toggleStatsBtn.textContent = 'ดูสถิติคู่';
-    }
 
-    ui.renderPlayerList();
+    ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
 }
 
@@ -611,6 +604,100 @@ ui.dom.historyContainer.addEventListener('click', (e) => {
         ui.openPlayerModal(editingContext, selectPlayerForSwap);
     }
 });
+
+// ==============
+// Export/Import handlers
+// ==============
+const exportBtn = document.getElementById('export-btn');
+const importBtn = document.getElementById('import-btn');
+const importFile = document.getElementById('import-file');
+
+async function doExport() {
+    const courtCount = parseInt(ui.dom.courtCountInput.value, 10) || 2;
+    const payload = state.getExportPayload(courtCount);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const filename = `badminton-matcher-export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+
+    // ถ้าเบราว์เซอร์รองรับ File System Access API (Chrome, Edge บนเดสก์ท็อป)
+    if (window.showSaveFilePicker) {
+        try {
+            const handle = await window.showSaveFilePicker({
+                suggestedName: filename,
+                types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            alert('บันทึกไฟล์ Export สำเร็จ');
+            return;
+        } catch (e) {
+            if (e.name !== 'AbortError') console.error(e);
+            // ถ้ายกเลิกก็ไป fallback ต่อ
+        }
+    }
+
+    // Fallback: สร้างลิงก์ดาวน์โหลด
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+}
+
+async function doImportFromFile(file) {
+    const text = await file.text();
+    let obj;
+    try {
+        obj = JSON.parse(text);
+    } catch {
+        alert('ไฟล์ไม่ใช่ JSON ที่ถูกต้อง');
+        return;
+    }
+    try {
+        const { courtCount } = state.importFromObject(obj);
+        // เซ็ตค่า courtCount ใน UI ตามไฟล์ที่นำเข้า
+        ui.dom.courtCountInput.value = courtCount;
+        // รีเฟรช UI ทั้งหมด
+        ui.renderAll();
+        ui.refreshVisibility();
+        alert('นำเข้าข้อมูลสำเร็จ');
+    } catch (e) {
+        console.error(e);
+        alert(`นำเข้าล้มเหลว: ${e.message || e}`);
+    }
+}
+
+async function doImport() {
+    // ถ้ารองรับ File System Access API: เปิดตัวเลือกไฟล์
+    if (window.showOpenFilePicker) {
+        try {
+            const [handle] = await window.showOpenFilePicker({
+                multiple: false,
+                types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+            });
+            const file = await handle.getFile();
+            return doImportFromFile(file);
+        } catch (e) {
+            if (e.name !== 'AbortError') console.error(e);
+            // ถ้ายกเลิกก็ไป fallback ต่อ
+        }
+    }
+    // Fallback: คลิก input[type=file]
+    importFile.click();
+}
+
+// ผูก event
+if (exportBtn) exportBtn.addEventListener('click', doExport);
+if (importBtn) importBtn.addEventListener('click', doImport);
+if (importFile) {
+    importFile.addEventListener('change', () => {
+        const file = importFile.files?.[0];
+        if (file) doImportFromFile(file);
+        importFile.value = ''; // reset
+    });
+}
 
 
 // --- Initialization ---
