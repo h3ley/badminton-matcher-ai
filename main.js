@@ -504,6 +504,8 @@ ui.dom.currentRoundContainer.addEventListener('click', (e) => {
     state.currentMatch.courts[courtIndex].result = cur === team ? undefined : team;
     state.saveState(ui.dom.courtCountInput.value);
     ui.renderMatches();
+    ui.renderPartnershipStats();
+    ui.renderWinLossStats();
     return;
   }
     // จัดการการคลิกที่ปุ่ม reshuffle ของคอร์ด
@@ -528,11 +530,12 @@ ui.dom.currentRoundContainer.addEventListener('click', (e) => {
 
 ui.dom.toggleStatsBtn.addEventListener('click', () => {
     const isHidden = ui.dom.statsContainer.classList.toggle('hidden');
-    ui.dom.toggleStatsBtn.textContent = isHidden ? 'ดูสถิติคู่' : 'ซ่อนสถิติ';
     if (!isHidden) {
-        ui.renderPartnershipStats();
+        ui.renderPartnershipStats({ ...ui.getCurrentFilters?.() });
+        ui.renderWinLossStats({ ...ui.getCurrentFilters?.() });
     }
 });
+
 
 // Modal Listeners
 ui.dom.modalCloseBtn.addEventListener('click', ui.closePlayerModal);
@@ -591,6 +594,8 @@ ui.dom.historyContainer.addEventListener('click', (e) => {
         
         state.saveState(ui.dom.courtCountInput.value);
         ui.renderHistory();
+        ui.renderPartnershipStats();
+        ui.renderWinLossStats();
         return;
     }
 
@@ -627,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const courtCount = state.loadState();
     ui.dom.courtCountInput.value = courtCount;
     ui.renderAll();
+    ui.initStatsUI();
 });
 
 
