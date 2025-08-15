@@ -30,8 +30,33 @@ export const dom = {
     confirmMessage: document.getElementById('confirm-message'),
     confirmYesBtn: document.getElementById('confirm-yes-btn'),
     confirmNoBtn: document.getElementById('confirm-no-btn'),
-    swapPairsBtn: document.getElementById('swap-pairs-btn')
-};
+    swapPairsBtn: document.getElementById('swap-pairs-btn'),
+    wlTbody: document.getElementById('wl-tbody'),
+    // ส่วนสรุป
+    sumMatches: document.getElementById('sum-matches'),
+    sumPlayers: document.getElementById('sum-players'),
+    sumRounds: document.getElementById('sum-rounds'),
+    sumGames: document.getElementById('sum-games'),
+    sumDecided: document.getElementById('sum-decided'),
+    sumAvgwr: document.getElementById('sum-avgwr'),
+    // แท็บ/ฟิลเตอร์
+    closeStats: document.getElementById('close-stats'),
+    tabButtons: Array.from(document.querySelectorAll('#stats-container .tab-btn')),
+    panelPartner: document.getElementById('panel-partner'),
+    panelWl: document.getElementById('panel-wl'),
+    wlFilters: document.getElementById('wl-filters'),
+    wlSearch: document.getElementById('wl-search'),
+    wlSort: document.getElementById('wl-sort'),
+    partnerTbody: document.getElementById('partner-tbody'),
+    // ฟิลเตอร์กลาง
+    statsFilters: document.getElementById('stats-filters'),
+    statsSearch: document.getElementById('stats-search'),
+    statsSort: document.getElementById('stats-sort'),
+    statsSortDir: document.getElementById('stats-sortdir'),
+    // ตาราง
+    partnerTbody: document.getElementById('partner-tbody'),
+    wlTbody: document.getElementById('wl-tbody'),
+    };
 
 // --- Rendering Functions ---
 export function renderAll() {
@@ -40,6 +65,7 @@ export function renderAll() {
     renderHistory();
     if (!dom.statsContainer.classList.contains('hidden')) {
         renderPartnershipStats();
+        renderWinLossStats();
     }
 }
 
@@ -276,39 +302,211 @@ export function renderPlayerList() {
     });
 }
 
-export function renderPartnershipStats() {
-    dom.statsList.innerHTML = '';
-    const stats = [];
+export function renderPartnershipStats({ search = '', sortBy = 'wins', sortDir = 'desc' } = {}) {
+    if (!dom.partnerTbody) return;
 
-    for (const key in state.partnershipHistory) {
-        const count = state.partnershipHistory[key];
-        if (count > 0) {
-            const [p1Id, p2Id] = key.split('-');
-            const player1 = state.players.find(p => p.id == p1Id);
-            const player2 = state.players.find(p => p.id == p2Id);
+    const pairStats = new Map();
+    const keyOf = (a, b) => {
+        const [x, y] = [a.id, b.id].sort((m, n) => String(m).localeCompare(String(n)));
+        return `${x}-${y}`;
+    };
 
-            if (player1 && player2) {
-                stats.push({
-                    text: `${player1.name} & ${player2.name}: ${count} ครั้ง`,
-                    count: count
-                });
+    const timeline = [...state.history, state.currentMatch];
+
+    timeline.forEach(match => {
+        if (!match || !match.courts) return;
+
+        match.courts.forEach(court => {
+            const t1 = (court.team1 || []).filter(Boolean);
+            const t2 = (court.team2 || []).filter(Boolean);
+            if (t1.length < 2 || t2.length < 2) return;
+
+            const makePairs = (teamArr) => {
+                const pairs = [];
+                for (let i = 0; i < teamArr.length; i++) {
+                    for (let j = i + 1; j < teamArr.length; j++) {
+                        pairs.push([teamArr[i], teamArr[j]]);
+                    }
+                }
+                return pairs;
+            };
+
+            const pairsT1 = makePairs(t1);
+            const pairsT2 = makePairs(t2);
+            const res = court.result;
+
+            [...pairsT1, ...pairsT2].forEach(([pA, pB]) => {
+                const k = keyOf(pA, pB);
+                if (!pairStats.has(k)) {
+                    pairStats.set(k, { a: pA, b: pB, played: 0, win: 0, loss: 0 });
+                }
+                pairStats.get(k).played += 1;
+            });
+
+            if (res) {
+                const winPairs = res === 'team1' ? pairsT1 : pairsT2;
+                const losePairs = res === 'team1' ? pairsT2 : pairsT1;
+                winPairs.forEach(([pA, pB]) => { const k = keyOf(pA, pB); pairStats.get(k).win += 1; });
+                losePairs.forEach(([pA, pB]) => { const k = keyOf(pA, pB); pairStats.get(k).loss += 1; });
             }
-        }
+        });
+    });
+
+    let rows = Array.from(pairStats.values()).map(s => {
+        const wr = s.played ? (s.win * 100 / s.played) : 0;
+        return {
+            namePair: `${s.a.name} × ${s.b.name}`,
+            played: s.played,
+            wins: s.win,
+            losses: s.loss,
+            winrate: wr
+        };
+    });
+
+    // ค้นหา (ตรงกับชื่อคู่)
+    if (search) {
+        const q = search.trim().toLowerCase();
+        rows = rows.filter(r => r.namePair.toLowerCase().includes(q));
     }
 
-    if (stats.length === 0) {
-        dom.statsList.innerHTML = '<p>ยังไม่มีข้อมูลการจับคู่</p>';
-        return;
-    }
+    // เรียง
+    const dir = sortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+        if (sortBy === 'name') return dir * a.namePair.localeCompare(b.namePair, 'th');
+        if (sortBy === 'played') return dir * (a.played - b.played) || a.namePair.localeCompare(b.namePair, 'th');
+        if (sortBy === 'winrate') return dir * (a.winrate - b.winrate) || dir * (a.played - b.played);
+        if (sortBy === 'losses') return dir * (a.losses - b.losses) || dir * (a.played - b.played);
+        // default 'wins'
+        return dir * (a.wins - b.wins) || dir * (a.winrate - b.winrate) || dir * (a.played - b.played);
+    });
 
-    stats.sort((a, b) => b.count - a.count);
-
-    stats.forEach(stat => {
-        const p = document.createElement('p');
-        p.textContent = stat.text;
-        dom.statsList.appendChild(p);
+    // วาดตาราง
+    dom.partnerTbody.innerHTML = '';
+    rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.className = i % 2 ? 'bg-slate-50/50' : '';
+        tr.innerHTML = `
+      <td class="px-2 py-1.5 border-b text-left">${r.namePair}</td>
+      <td class="px-2 py-1.5 border-b">${r.played}</td>
+      <td class="px-2 py-1.5 border-b">${r.wins}</td>
+      <td class="px-2 py-1.5 border-b">${r.losses}</td>
+      <td class="px-2 py-1.5 border-b">
+        <div class="flex items-center gap-2 justify-center">
+          <div class="relative h-2 w-28 rounded-full bg-slate-200 overflow-hidden">
+            <div class="absolute inset-y-0 left-0 rounded-full bg-blue-500" style="width:${r.winrate.toFixed(0)}%"></div>
+          </div>
+          <div class="min-w-[2rem] text-right tabular-nums">${r.winrate.toFixed(0)}%</div>
+        </div>
+      </td>
+    `;
+        dom.partnerTbody.appendChild(tr);
     });
 }
+
+export function renderWinLossStats({ search = '', sortBy = 'wins', sortDir = 'desc' } = {}) {
+    if (!dom.wlTbody) return;
+
+    const perPlayer = {};
+    state.players.forEach(p => {
+        perPlayer[p.id] = { id: p.id, name: p.name, wins: 0, losses: 0 };
+    });
+
+    const timeline = [...state.history, state.currentMatch];
+    let decidedCount = 0;
+
+    timeline.forEach(match => {
+        if (!match || !match.courts) return;
+        match.courts.forEach(court => {
+            const t1 = (court.team1 || []).filter(Boolean);
+            const t2 = (court.team2 || []).filter(Boolean);
+            if (t1.length < 2 || t2.length < 2) return;
+            const res = court.result;
+            if (!res) return;
+
+            decidedCount++;
+            const winners = res === 'team1' ? t1 : t2;
+            const losers = res === 'team1' ? t2 : t1;
+            winners.forEach(p => perPlayer[p.id] && perPlayer[p.id].wins++);
+            losers.forEach(p => perPlayer[p.id] && perPlayer[p.id].losses++);
+        });
+    });
+
+    let rows = Object.values(perPlayer).map(s => {
+        const played = s.wins + s.losses;
+        const winrate = played ? (s.wins * 100 / played) : 0;
+        return { name: s.name, played, wins: s.wins, losses: s.losses, winrate };
+    });
+
+    if (search) {
+        const q = search.trim().toLowerCase();
+        rows = rows.filter(r => r.name.toLowerCase().includes(q));
+    }
+
+    const dir = sortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+        if (sortBy === 'name') return dir * a.name.localeCompare(b.name, 'th');
+        if (sortBy === 'played') return dir * (a.played - b.played) || a.name.localeCompare(b.name, 'th');
+        if (sortBy === 'winrate') return dir * (a.winrate - b.winrate) || dir * (a.played - b.played);
+        // default 'wins'
+        return dir * (a.wins - b.wins) || dir * (a.winrate - b.winrate) || dir * (a.played - b.played);
+    });
+
+    dom.wlTbody.innerHTML = '';
+    rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.className = i % 2 ? 'bg-slate-50/50' : '';
+        tr.innerHTML = `
+      <td class="px-2 py-1.5 border-b text-left">${r.name}</td>
+      <td class="px-2 py-1.5 border-b">${r.played}</td>
+      <td class="px-2 py-1.5 border-b">${r.wins}</td>
+      <td class="px-2 py-1.5 border-b">${r.losses}</td>
+      <td class="px-2 py-1.5 border-b">
+        <div class="flex items-center gap-2">
+          <div class="relative h-2 w-32 rounded-full bg-slate-200 overflow-hidden">
+            <div class="absolute inset-y-0 left-0 rounded-full bg-emerald-500" style="width:${r.winrate.toFixed(0)}%"></div>
+          </div>
+          <div class="min-w-[2rem] text-right tabular-nums">${r.winrate.toFixed(0)}%</div>
+        </div>
+      </td>
+    `;
+        dom.wlTbody.appendChild(tr);
+    });
+
+    // การ์ดสรุป
+    // ===== สรุป =====
+    if (dom.sumRounds) {
+        dom.sumRounds.textContent = String(state.history.length + (state.currentMatch?.courts?.length ? 1 : 0));
+    }
+
+    if (dom.sumGames || dom.sumDecided || dom.sumAvgwr) {
+        let totalGames = 0;
+        let decidedGames = 0;
+        const wrList = [];
+
+        const timeline = [...state.history, state.currentMatch];
+        timeline.forEach(match => {
+            if (!match || !match.courts) return;
+            match.courts.forEach(court => {
+                const t1 = (court.team1 || []).filter(Boolean);
+                const t2 = (court.team2 || []).filter(Boolean);
+                if (t1.length < 2 || t2.length < 2) return; // ต้องครบคู่
+                totalGames++;
+                if (court.result) {
+                    decidedGames++;
+                }
+            });
+        });
+
+        // อัตราชนะเฉลี่ยจากตาราง WL ที่เพิ่งคำนวณ
+        const wrs = rows.filter(r => r.played > 0).map(r => r.winrate);
+        const avgWr = wrs.length ? (wrs.reduce((a, c) => a + c, 0) / wrs.length) : 0;
+
+        if (dom.sumGames) dom.sumGames.textContent = String(totalGames);
+        if (dom.sumDecided) dom.sumDecided.textContent = String(decidedGames);
+        if (dom.sumAvgwr) dom.sumAvgwr.textContent = `${avgWr.toFixed(0)}%`;
+    }
+}
+
 
 // --- Modal Management ---
 export function openPlayerModal(context, onSelect) {
@@ -393,4 +591,58 @@ export function openConfirmModal(title, message, onConfirm) {
 
 export function closeConfirmModal() {
     dom.confirmModal.classList.remove('is-open');
+}
+
+export function initStatsUI() {
+  // ปุ่มปิด
+  dom.closeStats?.addEventListener('click', () => {
+    dom.statsContainer.classList.add('hidden');
+  });
+
+  // แท็บ
+  dom.tabButtons?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      dom.tabButtons.forEach(b => b.classList.remove('active', 'text-slate-900', 'border-slate-900'));
+      dom.tabButtons.forEach(b => b.classList.add('text-slate-500', 'border-transparent'));
+      btn.classList.add('active', 'text-slate-900', 'border-slate-900');
+      btn.classList.remove('text-slate-500');
+
+      const tab = btn.dataset.tab;
+      const showPartner = tab === 'partner';
+      dom.panelPartner.classList.toggle('hidden', !showPartner);
+      dom.panelWl.classList.toggle('hidden', showPartner);
+
+      // ฟิลเตอร์เดียว ใช้ได้ทั้งสองแท็บ ไม่ต้องซ่อน
+      renderStatsWithCurrentFilters();
+    });
+  });
+
+  // ฟิลเตอร์กลาง
+  const onFilter = () => renderStatsWithCurrentFilters();
+  dom.statsSearch?.addEventListener('input', onFilter);
+  dom.statsSort?.addEventListener('change', onFilter);
+  dom.statsSortDir?.addEventListener('change', onFilter);
+}
+
+function getCurrentFilters() {
+  return {
+    search: dom.statsSearch?.value || '',
+    sortBy: dom.statsSort?.value || 'wins',
+    sortDir: dom.statsSortDir?.value || 'desc',
+  };
+}
+
+function renderStatsWithCurrentFilters() {
+  const f = getCurrentFilters();
+
+  // เรนเดอร์สรุปเสมอ (อัปเดตการ์ดสรุป)
+  renderWinLossStats({ ...f });
+
+  // เรนเดอร์ตามแท็บที่เปิดอยู่
+  const partnerActive = !dom.panelPartner.classList.contains('hidden');
+  if (partnerActive) {
+    renderPartnershipStats({ ...f });
+  } else {
+    renderWinLossStats({ ...f });
+  }
 }

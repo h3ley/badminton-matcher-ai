@@ -63,16 +63,124 @@
         <section class="bg-white p-4 rounded-2xl shadow-sm mb-6">
             <div class="flex flex-wrap justify-center items-center mb-3">
                 <h3 class="text-lg font-semibold text-slate-700 text-center">ผู้เล่นทั้งหมด (<span id="player-total-count">0</span>)</h3>
-                <button id="toggle-stats-btn" class="ml-4 text-xs text-sky-600 hover:underline">ดูสถิติคู่</button>
+                <button id="toggle-stats-btn" class="ml-4 text-xs text-sky-600 hover:underline">ดูสถิติ</button>
                 <label class="w-full items-center text-slate-500 mt-1 text-xs text-center">
                     <input id="toggle-levels" type="checkbox" class="accent-gray-600">ซ่อนระดับผู้เล่น
                 </label>  
             </div>          
             <div id="player-list-container" class="flex flex-wrap justify-center items-center gap-2 min-h-[3rem]"></div>
-            <div id="stats-container" class="hidden mt-4 pt-4 border-t border-slate-200 ">
-                <h4 class="text-sm font-semibold text-center mb-2">สถิติการจับคู่ (Partner)</h4>
-                <div id="stats-list" class="text-xs text-slate-600 text-center max-h-48 overflow-y-auto"></div>
-            </div>
+
+            <!-- ส่วนสถิติผู้เล่น-->
+            <div id="stats-container" class="hidden mt-4">
+                <!-- Header -->
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-semibold text-slate-700">สถิติการเล่น</h3>
+                    <button id="close-stats" class="px-2.5 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600">
+                    ซ่อนสถิติ
+                    </button>
+                </div>
+
+                <!-- Summary cards -->
+                <div id="stats-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <div class="text-[10px] text-slate-400">จำนวนรอบทั้งหมด</div>
+                        <div id="sum-rounds" class="text-lg font-semibold text-slate-800">0</div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <div class="text-[10px] text-slate-400">เกมที่เล่นทั้งหมด</div>
+                        <div id="sum-games" class="text-lg font-semibold text-slate-800">0</div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <div class="text-[10px] text-slate-400">เกมที่ตัดสินผลแล้ว</div>
+                        <div id="sum-decided" class="text-lg font-semibold text-slate-800">0</div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <div class="text-[10px] text-slate-400">อัตราชนะเฉลี่ย</div>
+                        <div id="sum-avgwr" class="text-lg font-semibold text-slate-800">0%</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="mt-4 border-b border-slate-200">
+                    <nav class="-mb-px flex gap-2" aria-label="Tabs">
+                    <button data-tab="partner" class="tab-btn active px-3 py-2 text-xs font-medium border-b-2 border-slate-900 text-slate-900">
+                        การจับคู่ (Partner)
+                    </button>
+                    <button data-tab="wl" class="tab-btn px-3 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent">
+                        ชนะ/แพ้ (ต่อคน)
+                    </button>
+                    </nav>
+                </div>
+
+                <!-- Filters (ใช้ร่วมกันทั้งสองแท็บ) -->
+                <div id="stats-filters" class="mt-3 flex items-center gap-2">
+                <input id="stats-search" type="text" placeholder="ค้นหาชื่อ…"
+                    class="w-full sm:w-64 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300">
+
+                <div class="flex items-center gap-1 text-[11px] text-slate-500">
+                    เรียงโดย:
+                    <select id="stats-sort" class="rounded-lg border border-slate-300 px-2 py-1 text-xs bg-white">
+                    <!-- ตัวเลือกนี้ใช้ได้ทั้ง Partner และ WL -->
+                    <option value="wins">ชนะ</option>
+                    <option value="losses">แพ้</option>
+                    <option value="winrate">อัตราชนะ</option>
+                    <option value="played">จำนวนเล่น</option>
+                    <option value="name">ชื่อ</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1 text-[11px] text-slate-500">
+                    จาก:
+                    <select id="stats-sortdir" class="rounded-lg border border-slate-300 px-2 py-1 text-xs bg-white">
+                    <option value="desc">มาก → น้อย</option>
+                    <option value="asc">น้อย → มาก</option>
+                    </select>
+                </div>
+                </div>
+
+                <!-- Panels -->
+                <div class="mt-3">
+                    <!-- PARTNER PANEL -->
+                    <div id="panel-partner">
+                        <div class="text-[11px] text-slate-500 mb-1">คู่ที่เล่นด้วยกันบ่อยสุด</div>
+
+                        <!-- ตารางสถิติการจับคู่ -->
+                        <div class="relative overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <table class="min-w-full text-xs text-slate-700 text-center">
+                            <thead class="sticky top-0 z-20 bg-slate-50">
+                                <tr>
+                                <th class="px-2 py-2 border-b text-left w-20 sm:w-auto">คู่ผู้เล่น</th>
+                                <th class="px-2 py-2 border-b">เล่นร่วม</th>
+                                <th class="px-2 py-2 border-b">ชนะร่วม</th>
+                                <th class="px-2 py-2 border-b">แพ้ร่วม</th>
+                                <th class="px-2 py-2 border-b w-40">อัตราชนะร่วม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partner-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- WL PANEL -->
+                    <div id="panel-wl" class="hidden">
+                    <div class="relative overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <table class="min-w-full text-xs text-slate-700 text-center">
+                        <thead class="sticky top-0 z-20 bg-slate-50">
+                            <tr>
+                            <th class="px-2 py-2 border-b text-left">ผู้เล่น</th>
+                            <th class="px-2 py-2 border-b">แข่ง</th>
+                            <th class="px-2 py-2 border-b">ชนะ</th>
+                            <th class="px-2 py-2 border-b">แพ้</th>
+                            <th class="px-2 py-2 border-b w-48">อัตราชนะ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wl-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-[10px] text-slate-400">* นับเฉพาะเกมที่มีผลแพ้/ชนะแล้ว</div>
+                    </div>
+                </div>
+                </div>
         </section>
 
         <!-- Action Buttons -->
