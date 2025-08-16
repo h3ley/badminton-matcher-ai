@@ -158,15 +158,25 @@
                         <!-- ตารางสถิติการจับคู่ -->
                         <div class="relative overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                             <table class="min-w-full text-xs text-slate-700 text-center">
-                            <thead class="sticky top-0 z-20 bg-slate-50">
-                                <tr>
-                                <th class="px-2 py-2 border-b text-left w-20 sm:w-auto">คู่ผู้เล่น</th>
-                                <th class="px-2 py-2 border-b">เล่นร่วม</th>
-                                <th class="px-2 py-2 border-b">ชนะร่วม</th>
-                                <th class="px-2 py-2 border-b">แพ้ร่วม</th>
-                                <th class="px-2 py-2 border-b w-40">อัตราชนะร่วม</th>
-                                </tr>
-                            </thead>
+                                <thead class="sticky top-0 z-20 bg-slate-50">
+                                    <tr>
+                                        <th data-sortkey="name" class="px-2 py-2 border-b text-left w-20 sm:w-auto cursor-pointer select-none">
+                                            คู่ผู้เล่น <span class="sort-arrow ml-1 text-slate-400"></span>
+                                        </th>
+                                        <th data-sortkey="played" class="px-2 py-2 border-b cursor-pointer select-none">
+                                            แข่ง<span class="sort-arrow ml-1 text-slate-400"></span>
+                                        </th>
+                                        <th data-sortkey="wins" class="px-2 py-2 border-b cursor-pointer select-none">
+                                            ชนะ <span class="sort-arrow ml-1 text-slate-400"></span>
+                                        </th>
+                                        <th data-sortkey="losses" class="px-2 py-2 border-b cursor-pointer select-none">
+                                            แพ้ <span class="sort-arrow ml-1 text-slate-400"></span>
+                                        </th>
+                                        <th data-sortkey="winrate" class="px-2 py-2 border-b cursor-pointer select-none">
+                                            อัตราชนะ <span class="sort-arrow ml-1 text-slate-400"></span>
+                                        </th>
+                                    </tr>
+                                </thead>
                             <tbody id="partner-tbody"></tbody>
                             </table>
                         </div>
@@ -176,15 +186,25 @@
                     <div id="panel-wl" class="hidden">
                     <div class="relative overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                         <table class="min-w-full text-xs text-slate-700 text-center">
-                        <thead class="sticky top-0 z-20 bg-slate-50">
-                            <tr>
-                            <th class="px-2 py-2 border-b text-left">ผู้เล่น</th>
-                            <th class="px-2 py-2 border-b">แข่ง</th>
-                            <th class="px-2 py-2 border-b">ชนะ</th>
-                            <th class="px-2 py-2 border-b">แพ้</th>
-                            <th class="px-2 py-2 border-b w-48">อัตราชนะ</th>
-                            </tr>
-                        </thead>
+                            <thead class="sticky top-0 z-20 bg-slate-50">
+                                <tr>
+                                    <th data-sortkey="name" class="px-2 py-2 border-b text-left cursor-pointer select-none">
+                                        ผู้เล่น <span class="sort-arrow ml-1 text-slate-400"></span>
+                                    </th>
+                                    <th data-sortkey="played" class="px-2 py-2 border-b cursor-pointer select-none">
+                                        แข่ง <span class="sort-arrow ml-1 text-slate-400"></span>
+                                    </th>
+                                    <th data-sortkey="wins" class="px-2 py-2 border-b cursor-pointer select-none">
+                                        ชนะ <span class="sort-arrow ml-1 text-slate-400"></span>
+                                    </th>
+                                    <th data-sortkey="losses" class="px-2 py-2 border-b cursor-pointer select-none">
+                                        แพ้ <span class="sort-arrow ml-1 text-slate-400"></span>
+                                    </th>
+                                    <th data-sortkey="winrate" class="px-2 py-2 border-b cursor-pointer select-none">
+                                        อัตราชนะ <span class="sort-arrow ml-1 text-slate-400"></span>
+                                    </th>
+                                </tr>
+                            </thead>
                         <tbody id="wl-tbody"></tbody>
                         </table>
                     </div>

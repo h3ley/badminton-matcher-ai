@@ -414,14 +414,7 @@ export function renderPartnershipStats({ search = '', sortBy = 'wins', sortDir =
       <td class="px-2 py-1.5 border-b">${r.played}</td>
       <td class="px-2 py-1.5 border-b">${r.wins}</td>
       <td class="px-2 py-1.5 border-b">${r.losses}</td>
-      <td class="px-2 py-1.5 border-b">
-        <div class="flex items-center gap-2 justify-center">
-          <div class="relative h-2 w-28 rounded-full bg-slate-200 overflow-hidden">
-            <div class="absolute inset-y-0 left-0 rounded-full bg-blue-500" style="width:${r.winrate.toFixed(0)}%"></div>
-          </div>
-          <div class="min-w-[2rem] text-right tabular-nums">${r.winrate.toFixed(0)}%</div>
-        </div>
-      </td>
+      <td class="px-2 py-1.5 border-b">${r.winrate.toFixed(0)}%</td>
     `;
         dom.partnerTbody.appendChild(tr);
     });
@@ -484,14 +477,7 @@ export function renderWinLossStats({ search = '', sortBy = 'wins', sortDir = 'de
       <td class="px-2 py-1.5 border-b">${r.played}</td>
       <td class="px-2 py-1.5 border-b">${r.wins}</td>
       <td class="px-2 py-1.5 border-b">${r.losses}</td>
-      <td class="px-2 py-1.5 border-b">
-        <div class="flex items-center gap-2">
-          <div class="relative h-2 w-32 rounded-full bg-slate-200 overflow-hidden">
-            <div class="absolute inset-y-0 left-0 rounded-full bg-emerald-500" style="width:${r.winrate.toFixed(0)}%"></div>
-          </div>
-          <div class="min-w-[2rem] text-right tabular-nums">${r.winrate.toFixed(0)}%</div>
-        </div>
-      </td>
+      <td class="px-2 py-1.5 border-b">${r.winrate.toFixed(0)}%</td>
     `;
         dom.wlTbody.appendChild(tr);
     });
@@ -646,6 +632,29 @@ export function initStatsUI() {
   dom.statsSearch?.addEventListener('input', onFilter);
   dom.statsSort?.addEventListener('change', onFilter);
   dom.statsSortDir?.addEventListener('change', onFilter);
+  const headerClickHandler = (e) => {
+    const th = e.currentTarget;
+    const key = th.getAttribute('data-sortkey');
+    if (!key) return;
+
+    const currentKey = dom.statsSort?.value || 'wins';
+    const currentDir = dom.statsSortDir?.value || 'desc';
+    const nextDir = (key === currentKey) ? (currentDir === 'asc' ? 'desc' : 'asc') : 'desc';
+
+    if (dom.statsSort) dom.statsSort.value = key;
+    if (dom.statsSortDir) dom.statsSortDir.value = nextDir;
+
+    renderStatsWithCurrentFilters();
+    updateSortHeaderArrows(key, nextDir);
+  };
+
+  document
+    .querySelectorAll('#stats-container thead [data-sortkey]')
+    .forEach(th => th.addEventListener('click', headerClickHandler));
+
+  // ลูกศรเริ่มต้นตาม dropdown ปัจจุบัน
+  updateSortHeaderArrows(dom.statsSort?.value || 'wins', dom.statsSortDir?.value || 'desc');
+
 }
 
 function getCurrentFilters() {
@@ -669,4 +678,22 @@ function renderStatsWithCurrentFilters() {
   } else {
     renderWinLossStats({ ...f });
   }
+  const f2 = getCurrentFilters();
+  updateSortHeaderArrows(f2.sortBy, f2.sortDir);
+}
+
+function updateSortHeaderArrows(activeKey, dir) {
+  const ths = document.querySelectorAll('#stats-container thead [data-sortkey]');
+  ths.forEach(th => {
+    const key = th.getAttribute('data-sortkey');
+    const arrow = th.querySelector('.sort-arrow');
+    if (!arrow) return;
+    if (key === activeKey) {
+      arrow.textContent = dir === 'asc' ? '↑' : '↓';
+      arrow.classList.remove('opacity-0');
+    } else {
+      arrow.textContent = '';
+      arrow.classList.add('opacity-0');
+    }
+  });
 }

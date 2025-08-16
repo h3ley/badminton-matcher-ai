@@ -428,6 +428,14 @@ function deleteHistoryRound(historyIndex) {
             }
         });
 
+        // หลังอัปเดต state.players เสร็จแล้ว → sync ค่า consecutiveRests ให้ snapshot ใน match.resting ด้วย
+        if (Array.isArray(match.resting)) {
+            match.resting = match.resting.map(r => {
+                const ref = state.players.find(p => p.id === r.id);
+                return ref ? { ...r, consecutiveRests: ref.consecutiveRests } : r;
+            });
+        }
+
         match.courts.forEach(court => {
             if (court.team1[0] && court.team1[1]) {
                 const t1k = [court.team1[0].id, court.team1[1].id].sort().join('-');
