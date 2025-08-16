@@ -414,14 +414,7 @@ export function renderPartnershipStats({ search = '', sortBy = 'wins', sortDir =
       <td class="px-2 py-1.5 border-b">${r.played}</td>
       <td class="px-2 py-1.5 border-b">${r.wins}</td>
       <td class="px-2 py-1.5 border-b">${r.losses}</td>
-      <td class="px-2 py-1.5 border-b">
-        <div class="flex items-center gap-2 justify-center">
-          <div class="relative h-2 w-28 rounded-full bg-slate-200 overflow-hidden">
-            <div class="absolute inset-y-0 left-0 rounded-full bg-blue-500" style="width:${r.winrate.toFixed(0)}%"></div>
-          </div>
-          <div class="min-w-[2rem] text-right tabular-nums">${r.winrate.toFixed(0)}%</div>
-        </div>
-      </td>
+      <td class="px-2 py-1.5 border-b">${r.winrate.toFixed(0)}%</td>
     `;
         dom.partnerTbody.appendChild(tr);
     });
@@ -484,14 +477,7 @@ export function renderWinLossStats({ search = '', sortBy = 'wins', sortDir = 'de
       <td class="px-2 py-1.5 border-b">${r.played}</td>
       <td class="px-2 py-1.5 border-b">${r.wins}</td>
       <td class="px-2 py-1.5 border-b">${r.losses}</td>
-      <td class="px-2 py-1.5 border-b">
-        <div class="flex items-center gap-2">
-          <div class="relative h-2 w-32 rounded-full bg-slate-200 overflow-hidden">
-            <div class="absolute inset-y-0 left-0 rounded-full bg-emerald-500" style="width:${r.winrate.toFixed(0)}%"></div>
-          </div>
-          <div class="min-w-[2rem] text-right tabular-nums">${r.winrate.toFixed(0)}%</div>
-        </div>
-      </td>
+      <td class="px-2 py-1.5 border-b">${r.winrate.toFixed(0)}%</td>
     `;
         dom.wlTbody.appendChild(tr);
     });
