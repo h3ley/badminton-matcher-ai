@@ -68,12 +68,36 @@ function generateNewRound(IsNewRound = true) {
     const courts = createBalancedMatches(playingPool);
     
     const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
+    // เก็บ snapshot เดิมไว้เฉพาะกรณีสุ่มใหม่ (ไม่ใช่เริ่มรอบใหม่)
+    const prevSnap = (!IsNewRound && state.currentMatch && state.currentMatch._initialRandomPick)
+        ? state.currentMatch._initialRandomPick
+        : null;
 
     state.setCurrentMatch({
         round: state.round,
         courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
         resting: state.players.filter(p => !playingNowIds.has(p.id))
     });
+
+    // คืน snapshot กลับเข้า currentMatch เมื่อสุ่มใหม่
+    if (!IsNewRound && prevSnap && !state.currentMatch._initialRandomPick) {
+        state.currentMatch._initialRandomPick = prevSnap;
+    }
+
+    // Snapshot first random pick (do only once per round)
+    if (IsNewRound && !state.currentMatch._initialRandomPick) {
+        const _courtsIds = state.currentMatch.courts.map(c => [
+            c.team1.map(p => p.id),
+            c.team2.map(p => p.id),
+        ]);
+        const _restingIds = state.currentMatch.resting.map(p => p.id);
+
+        state.currentMatch._initialRandomPick = {
+            courts: _courtsIds,                 // ไว้เผื่อใช้
+            courtIdsFlat: _courtsIds.flat(2),   // <-- ใช้ตัวนี้เช็คไฮไลท์
+            createdAt: Date.now()
+        };
+    }
     
     state.players.forEach(p => {
         if (playingNowIds.has(p.id)) {
