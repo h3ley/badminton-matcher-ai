@@ -68,12 +68,36 @@ function generateNewRound(IsNewRound = true) {
     const courts = createBalancedMatches(playingPool);
     
     const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
+    // เก็บ snapshot เดิมไว้เฉพาะกรณีสุ่มใหม่ (ไม่ใช่เริ่มรอบใหม่)
+    const prevSnap = (!IsNewRound && state.currentMatch && state.currentMatch._initialRandomPick)
+        ? state.currentMatch._initialRandomPick
+        : null;
 
     state.setCurrentMatch({
         round: state.round,
         courts: courts.map((c, i) => ({ ...c, courtNum: i + 1 })),
         resting: state.players.filter(p => !playingNowIds.has(p.id))
     });
+
+    // คืน snapshot กลับเข้า currentMatch เมื่อสุ่มใหม่
+    if (!IsNewRound && prevSnap && !state.currentMatch._initialRandomPick) {
+        state.currentMatch._initialRandomPick = prevSnap;
+    }
+
+    // Snapshot first random pick (do only once per round)
+    if (IsNewRound && !state.currentMatch._initialRandomPick) {
+        const _courtsIds = state.currentMatch.courts.map(c => [
+            c.team1.map(p => p.id),
+            c.team2.map(p => p.id),
+        ]);
+        const _restingIds = state.currentMatch.resting.map(p => p.id);
+
+        state.currentMatch._initialRandomPick = {
+            courts: _courtsIds,                 // ไว้เผื่อใช้
+            courtIdsFlat: _courtsIds.flat(2),   // <-- ใช้ตัวนี้เช็คไฮไลท์
+            createdAt: Date.now()
+        };
+    }
     
     state.players.forEach(p => {
         if (playingNowIds.has(p.id)) {
@@ -132,13 +156,15 @@ function reshuffleSingleCourt(courtIndex) {
         changePartnershipCount(oldKey2, -1)
     }
 
-    const reshufflePool = [...originalPlayersInCourt, ...state.currentMatch.resting];
+    const reshufflePool = [...originalPlayersInCourt];
+    
 
     if (reshufflePool.length < 4) return;
-
-    shuffleArray(reshufflePool);
-    const newCourtPlayers = reshufflePool.slice(0, 4);
-    const newRestingPlayers = reshufflePool.slice(4);
+    const firstPlayer = reshufflePool[0];
+    const otherPlayers = reshufflePool.slice(1);
+    shuffleArray(otherPlayers);
+    const newCourtPlayers = [firstPlayer, ...otherPlayers.slice(0, 3)];
+    const newRestingPlayers = state.currentMatch.resting
 
     const originalPlayerIds = new Set(originalPlayersInCourt.map(p => p.id));
     const newPlayerIds = new Set(newCourtPlayers.map(p => p.id));

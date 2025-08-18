@@ -177,7 +177,8 @@ export function renderMatches() {
             const fullPlayer = state.players.find(p => p.id === player.id);
             const restCount = fullPlayer ? fullPlayer.consecutiveRests : 0;
             const restingTag = document.createElement('span');
-            restingTag.className = 'bg-sky-100 text-sky-800 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5';
+            const isInit = isInitialRandomHighlighted(player.id);
+            restingTag.className = `${isInit ? 'bg-green-100' : 'bg-sky-100'} text-sky-800 text-sm font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5`;
             restingTag.innerHTML = `
                 <span>${player.name}</span>
                 ${restCount > 1 ? `<span class="bg-amber-200 text-amber-800 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full">${restCount}</span>` : ''}
@@ -268,6 +269,14 @@ export function renderHistory() {
     }
 }
 
+function isInitialRandomHighlighted(playerId) {
+  const snap = state.currentMatch && state.currentMatch._initialRandomPick;
+  if (!snap) return false;
+  return (
+    (Array.isArray(snap.courtIdsFlat) && snap.courtIdsFlat.includes(playerId))
+  );
+}
+
 export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, playerIndex, options = {}) {
     if (!player) return `<div class="p-2 w-24 h-8"></div>`;
     const isHistory = historyIndex !== null;
@@ -281,9 +290,13 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
     const slotClasses = isRepeat 
         ? 'bg-amber-100 border-amber-400' 
         : 'bg-slate-100 border-transparent';
+
+    const hl = (!isHistory && isInitialRandomHighlighted(player.id))
+        ? 'bg-green-100'
+        : '';
     
      return `
-        <div class="player-slot p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5 relative ${slotClasses}" 
+        <div class="player-slot p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5 relative ${slotClasses} ${hl}" 
              ${isHistory ? `data-history-index="${historyIndex}"` : ''}
              data-court-index="${courtIndex}" 
              data-team-index="${teamIndex}" 
@@ -540,7 +553,6 @@ export function openPlayerModal(context, onSelect) {
         'A': 'bg-orange-500 text-white'
     };
 
-    
     const restHeader = document.createElement('div');
     restHeader.className = 'col-span-2 text-center font-semibold text-slate-600 text-sm';
     restHeader.textContent = 'ผู้เล่นที่พัก';
@@ -551,7 +563,8 @@ export function openPlayerModal(context, onSelect) {
     } else {
         availableRestForSwap.forEach(player => {
             const playerBtn = document.createElement('button');
-            playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm flex items-center gap-2';
+            const hl = isInitialRandomHighlighted(player.id) ? 'bg-green-100' : '';
+            playerBtn.className = `w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm flex items-center gap-2 ${hl}`;
             playerBtn.innerHTML = `
                 <span class="${levelColors[player.level]} level-indicator font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
                 <span class="flex-1">${player.name}</span>
@@ -574,7 +587,8 @@ export function openPlayerModal(context, onSelect) {
 
         availablePlayingForSwap.forEach(player => {
             const playerBtn = document.createElement('button');
-            playerBtn.className = 'w-full text-left p-2 rounded-lg hover:bg-green-100 transition text-sm flex items-center gap-2 border border-green-200';
+            const hl = isInitialRandomHighlighted(player.id) ? 'bg-green-100' : '';
+            playerBtn.className = `w-full text-left p-2 rounded-lg hover:bg-green-100 transition text-sm flex items-center gap-2 border border-green-200 ${hl}`;
             playerBtn.innerHTML = `
                 <span class="${levelColors[player.level]} level-indicator font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
                 <span class="flex-1">${player.name}</span>
