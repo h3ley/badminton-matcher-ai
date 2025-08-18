@@ -156,13 +156,15 @@ function reshuffleSingleCourt(courtIndex) {
         changePartnershipCount(oldKey2, -1)
     }
 
-    const reshufflePool = [...originalPlayersInCourt, ...state.currentMatch.resting];
+    const reshufflePool = [...originalPlayersInCourt];
+    
 
     if (reshufflePool.length < 4) return;
-
-    shuffleArray(reshufflePool);
-    const newCourtPlayers = reshufflePool.slice(0, 4);
-    const newRestingPlayers = reshufflePool.slice(4);
+    const firstPlayer = reshufflePool[0];
+    const otherPlayers = reshufflePool.slice(1);
+    shuffleArray(otherPlayers);
+    const newCourtPlayers = [firstPlayer, ...otherPlayers.slice(0, 3)];
+    const newRestingPlayers = state.currentMatch.resting
 
     const originalPlayerIds = new Set(originalPlayersInCourt.map(p => p.id));
     const newPlayerIds = new Set(newCourtPlayers.map(p => p.id));
