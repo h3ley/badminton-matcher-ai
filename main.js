@@ -10,7 +10,7 @@ function handleAddPlayers() {
     const names = ui.dom.playerInputList.value.split('\n').map(name => name.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
     names.forEach(name => {
         if (!state.players.some(p => p.name === name)) {
-            state.players.push({ id: Date.now() + Math.random(), name, gamesPlayed: 0, level: 'C', consecutiveRests: 0 });
+            state.players.push({ id: Date.now() + Math.random(), name, gamesPlayed: 0, level: 'C', consecutiveRests: 0,  consecutivePlays: 0 });
         }
     });
     ui.dom.playerInputList.value = '';
@@ -47,8 +47,10 @@ function generateNewRound(IsNewRound = true) {
     if (state.round > 0 && IsNewRound) {
         state.history.push(JSON.parse(JSON.stringify(state.currentMatch)));
     }
-
-    state.setRound(state.round + 1);
+ // กรณี reshuffle ต้องไม่เพิ่ม round
+    if (IsNewRound) {
+        state.setRound(state.round + 1);
+    }
     ui.dom.resultsSection.style.display = 'block';
     if (state.history.length > 0) ui.dom.historySection.style.display = 'block';
 
@@ -106,6 +108,7 @@ function generateNewRound(IsNewRound = true) {
         } else {
             p.consecutiveRests = countConsecutiveRests(p);
         }
+        p.consecutivePlays = countConsecutivePlays(p);
     });
 
     courts.forEach(court => {
@@ -134,7 +137,6 @@ function reshuffleCurrentRound() {
         for (const key of [t1k, t2k]) changePartnershipCount(key, -1);
     });
 
-    state.setRound(state.round - 1);
     generateNewRound(false);
 }
 
@@ -184,6 +186,9 @@ function reshuffleSingleCourt(courtIndex) {
 
         // ใช้มาตรฐานเดียวกัน: ถ้าเล่นอยู่ = 0, ถ้าพัก = ให้นับด้วยตัวช่วย
         p.consecutiveRests = isPlaying ? 0 : countConsecutiveRests(p);
+
+        // เพิ่มการคำนวณ consecutivePlays
+        p.consecutivePlays = countConsecutivePlays(p);
     });
 
     const newTeams = createBalancedMatches(newCourtPlayers);
@@ -309,10 +314,12 @@ function selectPlayerForSwap(newPlayer) {
             if(pOld) {
                 pOld.gamesPlayed--;
                 pOld.consecutiveRests = countConsecutiveRests(pOld);
+                pOld.consecutivePlays = countConsecutivePlays(pOld); 
             }
             if(pNew) {
                 pNew.gamesPlayed++;
                 pNew.consecutiveRests = 0;
+                pNew.consecutivePlays = countConsecutivePlays(pNew); 
             }
         }
 
@@ -322,6 +329,14 @@ function selectPlayerForSwap(newPlayer) {
             changePartnershipCount(newKey, +1)
         }
     }
+
+    // เพิ่มการคำนวณ consecutivePlays ให้ผู้เล่นทุกคน (เฉพาะรอบปัจจุบัน)
+    if (!isHistory) {
+        state.players.forEach(p => {
+            p.consecutivePlays = countConsecutivePlays(p);
+        });
+    }
+
     ui.renderAll();
     state.saveState(ui.dom.courtCountInput.value);
     ui.closePlayerModal();
@@ -334,6 +349,7 @@ function resetApp() {
     state.players.forEach(p => { 
         p.gamesPlayed = 0;
         p.consecutiveRests = 0;
+        p.consecutivePlays = 0; 
     });
     state.setPartnershipHistory({});
     
@@ -365,6 +381,30 @@ function countConsecutiveRests(player) {
             count++;
         } else {
             break;
+        }
+    }
+    return count;
+}
+
+function countConsecutivePlays(player) {
+    let count = 0;
+
+    // ตรวจว่าผู้เล่นเล่นในรอบปัจจุบันหรือไม่
+    if (!state.currentMatch?.courts?.some(c =>
+        [...c.team1, ...c.team2].some(p => p.id === player.id))) {
+        return 0; // ถ้าไม่เล่นในรอบปัจจุบัน = 0
+    }
+    count++; // เล่นรอบนี้
+
+    // ไล่ย้อนใน history ถ้ายังเล่นอยู่ให้ count++
+    for (let i = state.history.length - 1; i >= 0; i--) {
+        const matchPlaying = state.history[i].courts?.some(c =>
+            [...c.team1, ...c.team2].some(p => p.id === player.id));
+
+        if (matchPlaying) {
+            count++;
+        } else {
+            break; // หยุดนับเมื่อเจอรอบที่ไม่ได้เล่น
         }
     }
     return count;
@@ -433,7 +473,7 @@ function deleteHistoryRound(historyIndex) {
     // --- สิ้นสุดส่วนที่เพิ่ม ---
 
     // 3. คำนวณสถิติทั้งหมดใหม่ตั้งแต่ต้น (เหมือนเดิม)
-    state.setPlayers(state.players.map(p => ({ ...p, gamesPlayed: 0, consecutiveRests: 0 })));
+    state.setPlayers(state.players.map(p => ({ ...p, gamesPlayed: 0, consecutiveRests: 0, consecutivePlays: 0 })));
     state.setPartnershipHistory({});
 
     // สร้างลำดับเวลาของแมตช์ที่ยังเหลืออยู่ทั้งหมด
@@ -449,8 +489,10 @@ function deleteHistoryRound(historyIndex) {
             if (playingIds.has(p.id)) {
                 p.gamesPlayed++;
                 p.consecutiveRests = 0;
+                p.consecutivePlays++;
             } else {
                 p.consecutiveRests++;
+                p.consecutivePlays = 0; // reset plays when resting
             }
         });
 
@@ -459,6 +501,19 @@ function deleteHistoryRound(historyIndex) {
             match.resting = match.resting.map(r => {
                 const ref = state.players.find(p => p.id === r.id);
                 return ref ? { ...r, consecutiveRests: ref.consecutiveRests } : r;
+            });
+        }
+        // หลังอัปเดต state.players เสร็จแล้ว → sync ค่า consecutivePlays ให้ snapshot ใน history ด้วย
+        if (Array.isArray(match.courts)) {
+            match.courts.forEach(court => {
+                court.team1 = court.team1.map(p => {
+                    const ref = state.players.find(pl => pl.id === p.id);
+                    return ref ? { ...p, consecutivePlays: ref.consecutivePlays } : p;
+                });
+                court.team2 = court.team2.map(p => {
+                    const ref = state.players.find(pl => pl.id === p.id);
+                    return ref ? { ...p, consecutivePlays: ref.consecutivePlays } : p;
+                });
             });
         }
 
