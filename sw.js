@@ -53,7 +53,7 @@ self.addEventListener('fetch', (event) => {
   const isHTML = req.headers.get('accept')?.includes('text/html');
 
   // HTML และ version.txt = network-first เพื่อเห็น deploy ใหม่ก่อน
-   if (isHTML || url.pathname === '/version.txt') {
+   if (isHTML || url.pathname === './version.txt') {
      event.respondWith((async () => {
        try {
          const fresh = await fetch(req, { cache: 'no-store' });
