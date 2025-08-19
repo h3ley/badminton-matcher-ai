@@ -46,7 +46,8 @@ function sanitizePlayer(p) {
         name: String(p.name ?? '').trim(),
         gamesPlayed: Number.isFinite(p.gamesPlayed) ? p.gamesPlayed : 0,
         level: skillLevels.includes(p.level) ? p.level : 'C',
-        consecutiveRests: Number.isFinite(p.consecutiveRests) ? p.consecutiveRests : 0
+        consecutiveRests: Number.isFinite(p.consecutiveRests) ? p.consecutiveRests : 0,
+        consecutivePlays: Number.isFinite(p.consecutivePlays) ? p.consecutivePlays : 0
     };
 }
 

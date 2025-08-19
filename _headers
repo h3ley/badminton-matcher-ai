@@ -2,6 +2,21 @@
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
 
+/main.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/matcher.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/state.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/ui.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/style.css
+  Cache-Control: no-cache, no-store, must-revalidate
+
 # Header สำหรับ Service Worker (สำคัญมาก)
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate

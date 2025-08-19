@@ -294,6 +294,12 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
     const hl = (!isHistory && isInitialRandomHighlighted(player.id))
         ? 'bg-green-100'
         : '';
+
+    // เพิ่มการแสดง badge consecutivePlays สำหรับรอบปัจจุบัน
+    const playCount = player?.consecutivePlays || 0;
+    const playBadge = playCount > 1
+        ? `<span class="text-green-600 font-bold text-xs mr-2 flex items-center justify-center">${playCount}</span>`
+        : '';
     
      return `
         <div class="player-slot p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5 relative ${slotClasses} ${hl}" 
@@ -304,6 +310,7 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
              data-player-id="${player.id}">
              <span class="level-indicator ${levelColors[player.level]} font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
             <span class="font-medium flex-1 text-center">${player.name}</span>
+            ${playBadge}
         </div>
     `;
 }
@@ -563,7 +570,7 @@ export function openPlayerModal(context, onSelect) {
     } else {
         availableRestForSwap.forEach(player => {
             const playerBtn = document.createElement('button');
-            const hl = isInitialRandomHighlighted(player.id) ? 'bg-green-100' : '';
+            const hl = !isHistory && isInitialRandomHighlighted(player.id) ? 'bg-green-100' : '';
             playerBtn.className = `w-full text-left p-2 rounded-lg hover:bg-sky-100 transition text-sm flex items-center gap-2 ${hl}`;
             playerBtn.innerHTML = `
                 <span class="${levelColors[player.level]} level-indicator font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
@@ -587,7 +594,7 @@ export function openPlayerModal(context, onSelect) {
 
         availablePlayingForSwap.forEach(player => {
             const playerBtn = document.createElement('button');
-            const hl = isInitialRandomHighlighted(player.id) ? 'bg-green-100' : '';
+            const hl = !isHistory && isInitialRandomHighlighted(player.id) ? 'bg-green-100' : '';
             playerBtn.className = `w-full text-left p-2 rounded-lg hover:bg-green-100 transition text-sm flex items-center gap-2 border border-green-200 ${hl}`;
             playerBtn.innerHTML = `
                 <span class="${levelColors[player.level]} level-indicator font-bold w-4 h-4 flex items-center justify-center rounded-full text-xs">${player.level}</span>
