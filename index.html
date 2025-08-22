@@ -7,17 +7,16 @@
     <link rel="manifest" href="/manifest.json">
 
     <!-- iOS เฉพาะ -->
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/src/icons/icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
+    <meta name="mobile-web-app-capable" content="yes">
     <title>โปรแกรมจัดคู่ตีแบดมินตัน</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- เรียกใช้ไฟล์ CSS ภายนอก -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/src/style.css">
     <link rel="icon" type="image/png" href="/icons/icon-192.png">
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -246,7 +245,7 @@
         </section>
 
         <!-- History Section -->
-        <section id="history-section" class="mt-10"">
+        <section id="history-section" class="mt-10">
             <h2 class="text-xl font-bold text-center mb-4 text-slate-700">📜 ประวัติการแข่งขัน</h2>
             <div id="history-container" class="space-y-4"></div>
         </section>
@@ -272,15 +271,6 @@
     </div>
 
     <!-- เรียกใช้ไฟล์ JavaScript ภายนอก -->
-    <script type="module" src="main.js"></script>
-    <script src="/version.js"></script>
-    <script>
-        (async () => {
-            const el = document.getElementById('app-version');
-            const ver = await getAppVersion();
-            // ถ้าคุณมี logic หาชื่อ branch จากโดเมนด้วยก็ใส่เพิ่มได้
-            el.textContent = `v${ver}`;
-        })();
-    </script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>

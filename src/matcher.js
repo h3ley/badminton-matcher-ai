@@ -118,7 +118,9 @@ export function createBalancedMatches(playerPool) {
     }
     
     shuffleArray(courts);
-    courts.forEach(c => { c.team1.sort(); c.team2.sort(); });
-    
+    courts.forEach(c => {
+        c.team1.sort((a, b) => a.id - b.id)
+        c.team2.sort((a, b) => a.id - b.id)
+    })
     return courts;
 }

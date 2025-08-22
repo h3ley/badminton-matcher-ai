@@ -1,0 +1,66 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+build/
+.tmp/
+.temp/
+.out/
+
+# Vite
+.vite/
+
+# Caches
+.cache/
+.nyc_output/
+.eslintcache
+.stylelintcache
+
+# Env files
+.env
+.env.*
+!.env.example
+!.env.schema
+
+# TypeScript
+*.tsbuildinfo
+
+# Editors / IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Turborepo
+.turbo/
+turbo.cookie
+
+# Cloudflare Workers (ถ้าใช้ wrangler dev)
+.wrangler/
+
+# Tests / reports
+coverage/
+playwright-report/
+test-results/
+
+# Optional: ถ้าใช้สคริปต์สร้างไฟล์เวอร์ชันตอน build
+public/version.txt
+
+# Archives
+*.zip
