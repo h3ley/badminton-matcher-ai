@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import pkg from './package.json' with { type: 'json' }
+
+const shortSha = process.env.CF_PAGES_COMMIT_SHA?.slice(0,7) ?? null
 
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(
-      process.env.CF_PAGES_COMMIT_SHA?.slice(0,7) ||
-      process.env.npm_package_version || 'dev'
-    ),
+    __APP_VERSION__: JSON.stringify(pkg.version),    
+    __APP_COMMIT__:  JSON.stringify(shortSha),    
   },
   plugins: [
     VitePWA({

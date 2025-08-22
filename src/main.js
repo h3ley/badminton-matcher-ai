@@ -3,9 +3,11 @@ import { registerSW } from 'virtual:pwa-register'
 registerSW({ immediate: true })
 
 // โชว์เวอร์ชัน (ถ้าต้องการ)
-if (typeof __APP_VERSION__ !== 'undefined') {
-  const el = document.getElementById('app-version')
-  if (el) el.textContent = `v${__APP_VERSION__}`
+const el = document.getElementById('app-version')
+if (el && typeof __APP_VERSION__ !== 'undefined') {
+  el.textContent = (typeof __APP_COMMIT__ !== 'undefined' && __APP_COMMIT__)
+    ? `v${__APP_VERSION__} (${__APP_COMMIT__})`
+    : `v${__APP_VERSION__}`
 }
 
 import * as state from './state.js';
