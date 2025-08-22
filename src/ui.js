@@ -678,7 +678,7 @@ export function initStatsUI() {
 
 }
 
-function getCurrentFilters() {
+export function getCurrentFilters() {
   return {
     search: dom.statsSearch?.value || '',
     sortBy: dom.statsSort?.value || 'wins',

@@ -1,3 +1,15 @@
+import './style.css'
+import { registerSW } from 'virtual:pwa-register'
+registerSW({ immediate: true })
+
+// โชว์เวอร์ชัน (ถ้าต้องการ)
+const el = document.getElementById('app-version')
+if (el && typeof __APP_VERSION__ !== 'undefined') {
+  el.textContent = (typeof __APP_COMMIT__ !== 'undefined' && __APP_COMMIT__)
+    ? `v${__APP_VERSION__} (${__APP_COMMIT__})`
+    : `v${__APP_VERSION__}`
+}
+
 import * as state from './state.js';
 import * as ui from './ui.js';
 import { createBalancedMatches, shuffleArray } from './matcher.js';
@@ -812,57 +824,4 @@ async function forceUpdate() {
     // fallback: hard reload
     window.location.reload(true);
   }
-}
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('✅ Service Worker Registered');
-
-      // ขอให้ตรวจอัปเดตทุกครั้งที่เปิดหน้า
-      registration.update();
-
-      // UI สำหรับปุ่มอัปเดต
-      const updateButton = document.getElementById('update-btn');
-      const updateNotification = document.getElementById('update-notification');
-
-      // ฟังก์ชันสำหรับส่ง message 'SKIP_WAITING'
-      const askToUpdate = (worker) => {
-        updateNotification.classList.remove('hidden');
-        updateButton.addEventListener('click', () => {
-          worker.postMessage({ type: 'SKIP_WAITING' });
-        });
-      };
-
-      // Event: เมื่อพบ SW เวอร์ชันใหม่
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        console.log('New Service Worker found, installing...');
-
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-             console.log('New Service Worker installed, ready to activate.');
-             askToUpdate(newWorker);
-             newWorker.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      });
-    if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-
-    } catch (error) {
-      console.error('Service Worker registration failed:', error);
-    }
-
-    // Event: เมื่อ SW ใหม่เข้ามาควบคุม (หลังจากผู้ใช้กดปุ่ม)
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      console.log('Controller changed, reloading page...');
-      window.location.reload();
-      refreshing = true;
-    });
-  });
 }
