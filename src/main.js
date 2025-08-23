@@ -49,6 +49,7 @@ function changePlayerLevel(playerId) {
 function generateNewRound(IsNewRound = true) {
     const numCourts = parseInt(ui.dom.courtCountInput.value, 10);
     const playersPerRound = numCourts * 4;
+    const isExactCourtFill = state.players.length % playersPerRound < state.players.length *0.25;
 
     if (state.players.length < playersPerRound) {
         ui.dom.messageArea.textContent = `ผู้เล่นไม่พอสำหรับ ${numCourts} คอร์ด (ต้องการ ${playersPerRound} คน, มี ${state.players.length} คน)`;
@@ -69,16 +70,32 @@ function generateNewRound(IsNewRound = true) {
     let availablePlayers = [...state.players];
     shuffleArray(availablePlayers);
     availablePlayers.sort((a, b) => {
+        if (IsNewRound) {
             // ให้ความสำคัญกับคนที่พักก่อน (เรียงจากมากไปน้อย)
             if (a.consecutiveRests !== b.consecutiveRests) {
                 return b.consecutiveRests - a.consecutiveRests;
             }
-            // ถ้าไม่เข้าเงื่อนไข ให้ใช้เกณฑ์จำนวนเกมที่เล่นน้อยที่สุดเหมือนเดิม
-            return a.gamesPlayed - b.gamesPlayed;
-        });
+        }
+        // ถ้าไม่เข้าเงื่อนไข ให้ใช้เกณฑ์จำนวนเกมที่เล่นน้อยที่สุดเหมือนเดิม
+        return a.gamesPlayed - b.gamesPlayed;
+    });
     
     let playingPool = availablePlayers.slice(0, playersPerRound);
-    
+
+    // สลับผู้เล่นบางส่วนระหว่างพักกับเล่น (เฉพาะกรณีรอบคี่ และกรณีที่จำนวนผู้เล่นพอดีกับคอร์ด หรือเป็นเศษน้อยกว่า 25%)
+    if (state.round % 2 !== 0 && isExactCourtFill) {
+        const resters = availablePlayers.slice(playersPerRound);
+        const minSwaps = Math.floor(state.players.length * 0.25)
+        if (resters.length > 0 && playingPool.length > 0) {
+            const swaps = Math.min(minSwaps, resters.length, playingPool.length);
+            for (let i = 0; i < swaps; i++) {
+                const pi = playingPool.length - 1 - i; // ดึงจากท้าย
+                const tmp = playingPool[pi];
+                playingPool[pi] = resters[i];          // ใส่คนพักเข้ามาเล่น
+                // ไม่จำเป็นต้องเขียน resters[i] = tmp เพราะ resters ไม่ถูกใช้ต่อ
+            }
+        }
+    }
     const courts = createBalancedMatches(playingPool);
     
     const playingNowIds = new Set(courts.flatMap(c => [...c.team1, ...c.team2]).map(p => p.id));
