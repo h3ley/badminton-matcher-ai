@@ -286,14 +286,10 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
         'A': 'bg-orange-500 text-white'
     };
 
+    const isInitialRandom = (!isHistory && isInitialRandomHighlighted(player.id))
     const { isRepeat = false } = options;
-    const slotClasses = isRepeat 
-        ? 'bg-amber-100 border-amber-400' 
-        : 'bg-slate-100 border-transparent';
+    const slotClasses = isRepeat && !isInitialRandom ? 'bg-amber-100' : isInitialRandom ? 'bg-green-100' : 'bg-slate-100';
 
-    const hl = (!isHistory && isInitialRandomHighlighted(player.id))
-        ? 'bg-green-100'
-        : '';
 
     // เพิ่มการแสดง badge consecutivePlays สำหรับรอบปัจจุบัน
     const playCount = player?.consecutivePlays || 0;
@@ -302,7 +298,7 @@ export function createPlayerHTML(player, historyIndex, courtIndex, teamIndex, pl
         : '';
     
      return `
-        <div class="player-slot p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5 relative ${slotClasses} ${hl}" 
+        <div class="player-slot p-1.5 rounded-md w-24 text-center cursor-pointer hover:bg-slate-200 transition text-xs flex items-center gap-1.5 relative ${slotClasses}" 
              ${isHistory ? `data-history-index="${historyIndex}"` : ''}
              data-court-index="${courtIndex}" 
              data-team-index="${teamIndex}" 
